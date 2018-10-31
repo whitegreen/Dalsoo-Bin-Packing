@@ -9,7 +9,7 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
 
 ## 1. Input 
 
-**a**. Only simple polygon: no holes, ```diff + no self-intersection ``` .
+**a**. Only simple polygon: no holes, no self-intersection.
 
 **b**. Data structure: point - double[];  polygon - double[][]; all polygons - double[][][]. 
 One might use other library to convert  other formats (e.g. dxf, obj) of polygon to double[][].
