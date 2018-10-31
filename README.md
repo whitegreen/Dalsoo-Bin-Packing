@@ -1,7 +1,12 @@
 # Dalsoo-Bin-Packing
+
+A java library for 2D irregural shape packing in rectangular sheets. Algorithms sterm from papers of Abeysooriya 2018 and Dalalah 2014.
+
 Bin packing places a given set of polygons in standard single/multiple rectangular sheet(s), to minimize the use of the sheet(s).
- This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface.
- The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
+
+This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface.
+
+The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
 
 ![alt text](multiple.png "Description goes here")
@@ -24,7 +29,7 @@ One might use *segment_max_length* to create more points on a long edge of a pol
 
 ## 2. Choose an algorithm
 
-**a**. *useAbey*=true, *Jostle heuristics for the 2D-irregular shapes bin packing problems with free rotation, R. P. Abeysooriya 2018*
+**a**. *useAbey*=true, *Jostle heuristics for the 2D-irregular shapes bin packing problems with free rotation, R. P. Abeysooriya et al. 2018*
 
 *rotSteps*:  Each polygon is rotated in the layout. Few steps (say 16) -> run fast  & poor result;  many steps (say 48) -> run slow & good results
 
@@ -33,7 +38,7 @@ large value -> run fast  & poor result; small value -> run slow & good results
 
 *segment_max_length* is related to translation steps.
 
-**b**. *useAbey*=false, *Waste minimization in irregular stock cutting, D. Dalalah, 2014*
+**b**. *useAbey*=false, *Waste minimization in irregular stock cutting, D. Dalalah et al. 2014*
 
 the rotation/translation steps depend on the polygons.
 
