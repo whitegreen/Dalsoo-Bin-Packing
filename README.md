@@ -1,12 +1,8 @@
 # Dalsoo-Bin-Packing
 
-A java library for 2D irregural shape packing in rectangular sheets. Algorithms sterm from papers of Abeysooriya 2018 and Dalalah 2014.
+A java library for 2D irregural shape packing in rectangular sheets. Algorithms are adapted from papers of Abeysooriya 2018 and Dalalah 2014. Bin packing places a given set of polygons in standard single/multiple rectangular sheet(s), to minimize the use of the sheet(s).
 
-Bin packing places a given set of polygons in standard single/multiple rectangular sheet(s), to minimize the use of the sheet(s).
-
-This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface.
-
-The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
+This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface. The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
 
 ![alt text](multiple.png "Description goes here")
@@ -17,11 +13,11 @@ The algorithm is effective when the ratio  (number of polygons / number of the t
 **a**. Only simple polygon: no holes, no self-intersection.
 
 **b**. Data structure: point - double[];  polygon - double[][]; all polygons - double[][][]. 
-One might use other library to convert  other formats (e.g. dxf, obj) of polygon to double[][].
+One might use other library to convert  other formats (e.g., dxf, obj) of polygon to double[][].
 
-**c**. It's better to represent a polygon with a proper number of points. 
+**c**. It's better to represent a polygon with a moderate number of points. 
 Too many points (e.g. a local detail contains dozens of points) slows down the algorithm. Avoid using too many points for a smooth curve.
-One might use *segment_max_length* to create more points on a long edge of a polygon, if the polygon has very few points or the edge is very long.
+One might use *segment_max_length* to let the algorithm create more points on a long straight edge of a polygon, if the polygon has very few points or the edge is very long.
 
 **d**. The algorithm handles the "reference point" of a polygon internally, however, it is better to avoid the coordinates of points too far away from the origin. 
 
@@ -29,7 +25,7 @@ One might use *segment_max_length* to create more points on a long edge of a pol
 
 ## 2. Choose an algorithm
 
-**a**. *useAbey*=true, *Jostle heuristics for the 2D-irregular shapes bin packing problems with free rotation, R. P. Abeysooriya et al. 2018*
+**a**. *useAbey*=true, *Jostle heuristics for the 2D-irregular shapes bin packing problems with free rotation, R. P. Abeysooriya et al. 2018*. However, Jostle method is not used.
 
 *rotSteps*:  Each polygon is rotated in the layout. Few steps (say 16) -> run fast  & poor result;  many steps (say 48) -> run slow & good results
 
