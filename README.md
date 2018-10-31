@@ -4,7 +4,7 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
  The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
 
-![alt text](Screen Shot.png "Description goes here")
+![alt text](multiple.png "Description goes here")
 
 s
 
