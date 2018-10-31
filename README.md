@@ -3,7 +3,7 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
  This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface.
  The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
-![Alt text](docs/Dalsoo-Bin-Packing/Screen Shot.png)
+![Alt text](/Screen Shot.png)
 
 1. Input 
 
