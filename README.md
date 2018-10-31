@@ -11,7 +11,7 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
 
 **a**. Only simple polygon: no holes, no self-intersection.
 
-**b**. Data structure: point - double[];  polygon - double[][]; all polygons - double[][][]. 
+**b**. Data structure: point - - ![#1589F0](double[])`#1589F0`;  polygon - double[][]; all polygons - double[][][]. 
 One might use other library to convert  other formats (e.g. dxf, obj) of polygon to double[][].
 
 **c**. It's better to represent a polygon with a proper number of points. 
