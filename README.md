@@ -53,9 +53,11 @@ double[][] *result_position*; // result_cos_sin[9] denotes the x,y-coordinate of
 
 Pack pack = packs.get(id);   //obtain a sheet (pack) by id.
 
-for (Strip strip : pack.fixs)  // obtain a placed strip (polygon) in a sheet.
+for (Strip strip : pack.fixs) { // obtain a placed strip (polygon) in a sheet.
 
-      strip.inps     // the polgyon's points, one might use other library to convert double[][] to other formats (dxf, obj) of polygon 
+strip.inps // the polgyon's points, one might use other library to convert double[][] to other formats (dxf, obj) of polygon 
+
+}
 
 ![alt text](single.png "Description goes here")
 
