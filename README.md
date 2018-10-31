@@ -7,7 +7,7 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
 ![alt text](multiple.png "Description goes here")
 
 
-1. Input 
+##1. Input 
 
 a. Only simple polygon: no holes, no self-intersection.
 
