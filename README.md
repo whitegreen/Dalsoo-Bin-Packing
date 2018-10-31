@@ -5,7 +5,7 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
 
 ![alt text](relative/path/to/img.jpg?raw=true "multiple sheets")
 a
-![alt text](screenshots/multiple sheets.jpg "Description goes here")
+![alt text](/multiple sheets.jpg "Description goes here")
 
 1. Input 
 
