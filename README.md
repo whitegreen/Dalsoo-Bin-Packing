@@ -3,7 +3,8 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
  This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface.
  The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
- 
+![Alt text](docs/Dalsoo-Bin-Packing/Screen Shot.png)
+
 1. Input 
 
 a. Only simple polygon: no holes, no self-intersection.
@@ -18,6 +19,7 @@ One might use segment_max_length to create more points on a long edge of a polyg
 d. The algorithm handles the "reference point" of a polygon internally, however, it is better to avoid the coordinates of points too far away from the origin. 
 
 
+
 2. Choose an algorithm
 
 a. useAbey=true, Jostle heuristics for the 2D-irregular shapes bin packing problems with free rotation, R. P. Abeysooriya 2018
@@ -28,6 +30,7 @@ segment_max_length is related to translation steps.
 
 b. useAbey=false, Waste minimization in irregular stock cutting, D. Dalalah, 2014
 the rotation/translation steps depend on the polygons.
+
 
 
 3. Output options
