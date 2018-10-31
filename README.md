@@ -3,11 +3,8 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
  This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface.
  The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
-![alt text](relative/path/to/img.jpg?raw=true "multiple sheets")
 
-a
-
-![alt text](multiple sheets.jpg "Description goes here")
+![alt text](Screen Shot.png "Description goes here")
 
 s
 
