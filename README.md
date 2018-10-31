@@ -6,10 +6,6 @@ Bin packing places a given set of polygons in standard single/multiple rectangul
 
 ![alt text](multiple.png "Description goes here")
 
-s
-
-![alt text](single.png "Description goes here")
-
 
 1. Input 
 
@@ -51,3 +47,6 @@ Pack pack = packs.get(id);   //obtain a sheet (pack) by id.
 for (Strip strip : pack.fixs) { // obtain a placed strip (polygon) in a sheet.
       strip.inps     // the polgyon's points, one might use other library to convert double[][] to other formats (dxf, obj) of polygon 
 }
+![alt text](multiple.png "Description goes here")
+
+
