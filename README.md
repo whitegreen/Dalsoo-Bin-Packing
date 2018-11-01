@@ -1,6 +1,6 @@
 # Dalsoo-Bin-Packing
 
-A java library for 2D irregural shape packing in rectangular sheets. Algorithms are adapted from papers of Abeysooriya 2018 and Dalalah 2014. Bin packing places a given set of polygons in standard single/multiple rectangular sheet(s), to minimize the use of the sheet(s).
+A java library for 2D irregular shape packing in rectangular sheets. Algorithms are adapted from papers of Abeysooriya 2018 and Dalalah 2014. Bin packing places a given set of polygons in standard single/multiple rectangular sheet(s), to minimize the use of the sheet(s).
 
 This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface. The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
