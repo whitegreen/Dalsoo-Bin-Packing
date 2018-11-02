@@ -2,6 +2,9 @@ package pack;
 
 import java.util.ArrayList;
 
+//Hao Hua, Southeast University, whitegreen@163.com
+
+
 public class Strip implements Comparable<Strip> {
 	public double[][] outps; // offset & add edge points , as referent point of placement, clock-wise
 	public final double[][] inps; // original polygon, for 1. convex, 2. intersection 

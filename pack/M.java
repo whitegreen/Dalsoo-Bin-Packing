@@ -2,6 +2,9 @@ package pack;
 
 import java.util.ArrayList;
 
+//Hao Hua, Southeast University, whitegreen@163.com
+
+
 public class M {
 	
 	private static final double denominator_lim=0.00000001;
