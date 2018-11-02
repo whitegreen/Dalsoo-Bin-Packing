@@ -58,6 +58,6 @@ strip.inps // the polygon's points, one might use other library to convert doubl
 
 }
 
-![alt text](single.png "The original polygon is marked in black, the margin(offset) in red. The convex of all polygons in one sheet is in green.”)
+![alt text](single.png "The original polygon is marked in black, the margin(offset) in red. The convex of all polygons in one sheet is in green.")
 
 
