@@ -5,7 +5,7 @@ A java library for 2D irregular shape packing in rectangular sheets. Algorithms 
 This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface. The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
 
-![alt text](multiple.png "Description goes here")
+![alt text](multiple.png “240 pieces of polygons are packed on 14 sheets within 27 seconds.”)
 
 
 ## 1. Input 
@@ -58,6 +58,6 @@ strip.inps // the polygon's points, one might use other library to convert doubl
 
 }
 
-![alt text](single.png "Description goes here")
+![alt text](single.png “The original polygon is marked in black, the margin(offset) in red. The convex of all polygons in one sheet is in green“)
 
 
