@@ -21,10 +21,9 @@ import processing.core.PApplet;
  * a. Only simple polygon: no holes, no self-intersection.
  * b. Data structure: point - double[];  polygon - double[][]; all polygons - double[][][]. 
  * One might use other library to convert  other formats (e.g. dxf, obj) of polygon to double[][].
- * c. It's better to represent a polygon with a proper number of points. 
+ * c. It's better to represent a polygon with a moderate number of points. 
  * Too many points (e.g. a local detail contains dozens of points) slows down the algorithm. Avoid using too many points for a smooth curve.
  * One might use segment_max_length to create more points on a long edge of a polygon, if the polygon has very few points or the edge is very long.
- * d. The algorithm handles the "reference point" of a polygon internally, however, it is better to avoid the coordinates of points too far away from the origin. 
  * 
  * 
  * 2. Choose an algorithm

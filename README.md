@@ -19,8 +19,6 @@ One might use other library to convert  other formats (e.g., dxf, obj) of polygo
 Too many points (e.g. a local detail contains dozens of points) slows down the algorithm. Avoid using too many points for a smooth curve.
 One might use *segment_max_length* to let the algorithm create more points on a long straight edge of a polygon, if the polygon has very few points or the edge is very long.
 
-**d**. The algorithm handles the "reference point" of a polygon internally, however, it is better to avoid the coordinates of points too far away from the origin. 
-
 
 
 ## 2. Choose an algorithm
@@ -44,11 +42,11 @@ the rotation/translation steps depend on the polygons.
 
 **a**. obtain the transformation of each polygon in the final layout, including:
 
-int[] *result_pack_id*;  // result_pack_id[9]=2 means the 9th polygon is on the 2nd sheet.
+int[] *result_pack_id*;  // result_pack_id[8]=2 means the 9th polygon is on the 3rd sheet.
 
-double[][] *result_cos_sin*; // result_cos_sin[9]={0.5, 0.866} means the 9th polygon is rotated 60 degree w.r.t its reference point
+double[][] *result_cos_sin*; // result_cos_sin[8]={0.5, 0.866} means the 9th polygon is rotated 60 degree around (0,0).
 
-double[][] *result_position*; // result_cos_sin[9] denotes the x,y-coordinate of the 9th polygon w.r.t its reference point
+double[][] *result_position*; // result_position[8]={7.4, 9.0} means that the 9th polygon should be translated by (7,4, 9.4) after rotation.
 
 **b**. obtain the geometry of each in the final layout 
 
@@ -56,7 +54,7 @@ Pack pack = packs.get(id);   //obtain a sheet (pack) by id.
 
 for (Strip strip : pack.fixs) { // obtain a placed strip (polygon) in a sheet.
 
-strip.inps // the polgyon's points, one might use other library to convert double[][] to other formats (dxf, obj) of polygon 
+strip.inps // the polygon's points, one might use other library to convert double[][] to other formats (dxf, obj) of polygon 
 
 }
 
