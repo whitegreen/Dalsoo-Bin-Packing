@@ -48,7 +48,7 @@ double[][] *result_cos_sin*; // result_cos_sin[8]={0.5, 0.866} means the 9th pol
 
 double[][] *result_position*; // result_position[8]={7.4, 9.0} means that the 9th polygon should be translated by (7,4, 9.4) after rotation.
 
-**b**. obtain the geometry of each in the final layout 
+**b**. obtain the geometry of each polygon in the final layout 
 
 Pack pack = packs.get(id);   //obtain a sheet (pack) by id.
 
