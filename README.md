@@ -4,6 +4,8 @@ A java library for 2D irregular shape packing in rectangular sheets. Algorithms 
 
 This library does not involve other libraries, however, the example uses core.jar (https://processing.org) for a graphical interface. The algorithm is effective when the ratio  (number of polygons / number of the types of polygons) is small.
 
+The processing user needs to create “…/libraries/dalsoo/library/dalsoo.jar”, and then write “import pack.*;” to import the library.
+
 
 ![alt text](multiple.png "240 pieces of polygons are packed on 14 sheets within 27 seconds.")
 
