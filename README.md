@@ -56,7 +56,7 @@ Pack pack = packs.get(id);   //obtain a sheet (pack) by id.
 
 for (Strip strip : pack.fixs) { // obtain a placed strip (polygon) in a sheet.
 
-strip.inps // the polygon's points, one might use other library to convert double[][] to other formats (dxf, obj) of polygon 
+strip.inps // the polygon's points, one might use other library to convert double[][] to other formats (e.g., dxf: https://github.com/whitegreen/DXF-Laser) of polygon 
 
 }
 
