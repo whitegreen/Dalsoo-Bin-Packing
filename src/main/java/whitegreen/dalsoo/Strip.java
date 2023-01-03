@@ -1,35 +1,37 @@
-package pack;
+package whitegreen.dalsoo;
 
 import java.util.ArrayList;
 
 //Hao Hua, Southeast University, whitegreen@163.com
 
-
 public class Strip implements Comparable<Strip> {
+	
 	public double[][] outps; // offset & add edge points , as referent point of placement, clock-wise
-	public final double[][] inps; // original polygon, for 1. convex, 2. intersection 
+	public final double[][] inps; // original polygon, for 1. convex, 2. intersection
 	public final double inarea;
-	public double[] trigo; //cos & sin
-	public double[] position ;
+	public double[] trigo; // cos & sin
+	public double[] position;
 	public final int id;
 
-	public Strip(int id, double[][] original_poly, double offset, Double segment_max_length) {
-		this.id=id;
-		if(offset<=0)
-			throw new RuntimeException();
+	public Strip(int id, double[][] original_poly, double spacing, Double segment_max_length) {
+		this.id = id;
+		if (spacing < 0) {
+			throw new IllegalArgumentException("spacing must be >=0");
+		}
 		double area = M.area(original_poly);
 		if (0 < area) {
 			inps = M.clone(original_poly);
 		} else {
 			inps = new double[original_poly.length][];
-			for (int i = 0; i < inps.length; i++)
+			for (int i = 0; i < inps.length; i++) {
 				inps[i] = original_poly[inps.length - 1 - i].clone();
+			}
 		}
 		inarea = Math.abs(area);
-		outps = M.offset(offset, inps); // clockwise
+		outps = M.offset(spacing, inps); // clockwise
 
-		if (null != segment_max_length) {
-			ArrayList<double[]> list = new ArrayList<double[]>();
+		if (segment_max_length != null) {
+			ArrayList<double[]> list = new ArrayList<>();
 			for (int i = 0; i < outps.length; i++) {
 				double[] pa = outps[i];
 				double[] pb = outps[(i + 1) % outps.length];
@@ -42,22 +44,19 @@ public class Strip implements Comparable<Strip> {
 						list.add(M.between(s, pa, pb));
 					}
 				}
-			}// for
+			} // for
 			outps = new double[list.size()][];
-			for (int i = 0; i < outps.length; i++)
+			for (int i = 0; i < outps.length; i++) {
 				outps[i] = list.get(i);
-		}// if
+			}
+		} // if
 	}
 
+	@Override
 	public int compareTo(Strip pl) {
-		if (this.inarea > pl.inarea)
-			return 1;  //return 1 for ascendant sorting
-		else if (this.inarea < pl.inarea)
-			return -1;
-		else
-			return 0;
+		return Double.compare(this.inarea, pl.inarea);
 	}
-	
+
 	public void fix_rotate_move(double[] cossin, double[] dv) { // finalize
 		trigo = cossin.clone();
 		position = dv.clone();

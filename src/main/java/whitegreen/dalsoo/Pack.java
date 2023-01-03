@@ -1,89 +1,104 @@
-package pack;
+package whitegreen.dalsoo;
+
+import static java.lang.Math.PI;
 
 //Hao Hua, Southeast University, whitegreen@163.com
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 
-public class Pack {
-	public ArrayList<Strip> fixs = new ArrayList<Strip>();
-	public ArrayList<Strip> movs = new ArrayList<Strip>();
+import net.jafama.FastMath;
+
+public final class Pack {
+
+	public ArrayList<Strip> fixs = new ArrayList<>();
+	public ArrayList<Strip> movs = new ArrayList<>();
 	public Convex cntConvex;
+	/**
+	 * Sin and cos values for each rotation step.
+	 */
 	private final double[][] trigos;
 	private final int rotSteps;
-	private static final double PI = Math.PI;
-	private final double WID, HEI;
+	private final double width, height;
 	private static final double areasc = 1E-6; //
 	private final double preferX; // 0.501 or 1
 
-	public Pack clone() {
-		Pack np = new Pack(trigos, rotSteps, WID, HEI, preferX);
-		np.movs = movs;
-		np.cntConvex = cntConvex;
-		return np;
-	}
-
-	public Pack(double[][] trigos, int rotSteps, double WID, double HEI, double preferX) {
+	Pack(double[][] trigos, int rotSteps, double width, double height, double preferX) {
 		this.trigos = trigos;
 		this.rotSteps = rotSteps;
-		this.WID = WID;
-		this.HEI = HEI;
+		this.width = width;
+		this.height = height;
 		this.preferX = preferX;
-		
-		float[][] arr = { { 1, 2 }, { 2, 0 }, { 3, -2 } };
-		Arrays.sort(arr, new Comparator<float[]>() {
-			public int compare(float[] a, float[] b) {
-				if (a[0] < b[0])
-					return -1;
-				else if (a[0] > b[0])
-					return 1;
-				else
-					return 0;
-			}
-		});
-//		for(float[] v: arr){
-//			System.out.println(v[0]);
-//		}
 	}
 
-	public boolean isEmpty() {
-		return movs.isEmpty();
-	}
-
-	public Pack(double[][][] polys, double offset, Double segment_max_length, int rotSteps, double WID, double HEI, double preferX) {
+	/**
+	 * 
+	 * @param polys              array of polygons [p1, p2]; for each polygon, its
+	 *                           vertices are expressed in [x, y] coordinate pairs:
+	 *                           [[p1x, p1y], [p2x, p2y]...]
+	 * @param spacing            boundary spacing between packed objects
+	 * @param segment_max_length
+	 * @param rotSteps
+	 * @param width              width of each bin
+	 * @param height             height of each bin
+	 * @param preferX
+	 */
+	public Pack(double[][][] polys, double spacing, Double segment_max_length, int rotSteps, double width, double height,
+			double preferX) {
+		if (0 > preferX || 1 < preferX) {
+			throw new IllegalArgumentException("skew must be between 0 and 1 (inclusive)");
+		}
 		for (int i = 0; i < polys.length; i++) {
 			double[][] poly = polys[i];
-			Strip strip = new Strip(i, poly, offset, segment_max_length);
+			Strip strip = new Strip(i, poly, spacing, segment_max_length);
 			movs.add(strip);
 		}
-		Collections.sort(movs); // ascend, remove form the end (largest)
-		if (0 > preferX || 1 < preferX)
-			throw new RuntimeException();
+		Collections.sort(movs); // sort by area, smallest first
 		this.preferX = preferX;
 
 		this.rotSteps = rotSteps;
 		trigos = new double[rotSteps][];
 		for (int i = 0; i < rotSteps; i++) {
 			double theta = i * 2 * PI / rotSteps;
-			trigos[i] = new double[] { Math.cos(theta), Math.sin(theta) };
+			trigos[i] = new double[] { FastMath.cos(theta), FastMath.sin(theta) };
 		}
-		this.WID = WID;
-		this.HEI = HEI;
-		System.out.println(WID + "*" + HEI);
+		this.width = width;
+		this.height = height;
+	}
+
+	public void packOneSheet(boolean abey) {
+		place1stStrip();
+		int size = movs.size();
+		for (int i = 0; i < size; i++) {
+			// place next largest polygon
+			if (abey) {
+				placeAnotherStrip_Abey(size - 1 - i);
+			} else {
+				placeAnotherStrip_Dalalah(size - 1 - i);
+			}
+		}
+		ArrayList<Strip> list = new ArrayList<>();
+		for (Strip stp : movs) {
+			if (null == stp) {
+				continue;
+			}
+			list.add(stp);
+		}
+		movs = list;
+//		System.out.println(fixs.size() + "->" + movs.size());
 	}
 
 	private void place1stStrip() {
-		int rotid = -1;
+		int rotid = 0;
 		double minArea = 1000000000;
 		int sid = movs.size() - 1; // ***************************************** last one
 		Strip first = movs.get(sid);
 		for (int i = 0; i < rotSteps; i++) {
 			double[][] tp = M.rotate(trigos[i], first.outps);
 			double[] bd = M.boundBox(tp); // minx, maxx, miny, maxy
-			if (bd[1] - bd[0] > WID || bd[3] - bd[2] > HEI)
+			if (bd[1] - bd[0] > width || bd[3] - bd[2] > height) {
 				continue;
+			}
 			double area = areasc * (bd[1] - bd[0]) * (bd[3] - bd[2]);
 			double[] center = M.mean(tp);
 			double len = preferX * (center[0] - bd[0]) + (1 - preferX) * (center[1] - bd[2]);
@@ -101,29 +116,11 @@ public class Pack {
 		cntConvex = new Convex(first.inps);
 	}
 
-	public void packOneSheet(boolean Abey) {
-		place1stStrip();
-		int size = movs.size();
-		for (int i = 0; i < size; i++) {
-			if (Abey)
-				placeAnotherStrip_Abey(size - 1 - i);
-			else
-				placeAnotherStrip_Dalalah(size - 1 - i);
-		}
-		ArrayList<Strip> list = new ArrayList<Strip>();
-		for (Strip stp : movs) {
-			if (null == stp)
-				continue;
-			list.add(stp);
-		}
-		movs = list;
-		System.out.println(fixs.size() + "->" + movs.size());
-	}
-
 	public double leftOverArea() {
 		double sum = 0;
-		for (Strip strip : movs)
+		for (Strip strip : movs) {
 			sum += strip.inarea;
+		}
 		return sum;
 	}
 
@@ -160,10 +157,11 @@ public class Pack {
 
 					for (int h = 0; h < 2; h++) { // two angles
 						double[] cossin;
-						if (0 == h)
+						if (0 == h) {
 							cossin = new double[] { ca0 * cb2 + sa0 * sb2, sa0 * cb2 - ca0 * sb2 }; // a0 - b2
-						else
+						} else {
 							cossin = new double[] { ca2 * cb0 + sa2 * sb0, sa2 * cb0 - ca2 * sb0 };// a2 - b0
+						}
 
 						double[][] rot_opl = M.rotate(cossin, opl);
 						double[] trans = M.sub(v, rot_opl[i]); // *****************
@@ -171,8 +169,9 @@ public class Pack {
 						if (feasible(trans_rot_outpoly)) {
 							double[][] trans_rot_inpoly = M.move(trans, M.rotate(cossin, stp.inps));
 							Convex tmpcon = cntConvex.clone();
-							for (double[] trp : trans_rot_inpoly)
+							for (double[] trp : trans_rot_inpoly) {
 								tmpcon.increment_hull(trp);
+							}
 
 							double conarea = areasc * M.areaAbs(tmpcon.convex);
 							double[] center = M.mean(trans_rot_inpoly);
@@ -185,12 +184,13 @@ public class Pack {
 								min_con = tmpcon;
 							}
 						}
-					}// for h
+					} // for h
 				}
 			}
 		} // for each vertex of new strip
-		if (null == min_cossin) // no solution, stop
+		if (null == min_cossin) { // no solution, stop
 			return false;
+		}
 		stp.fix_rotate_move(min_cossin, min_trans);
 		movs.set(sid, null);
 		fixs.add(stp);
@@ -216,8 +216,9 @@ public class Pack {
 						if (feasible(trans_rot_outpoly)) {
 							double[][] trans_rot_inpoly = M.move(trans, rotated_inpoly);
 							Convex tmpcon = cntConvex.clone();
-							for (double[] trp : trans_rot_inpoly)
+							for (double[] trp : trans_rot_inpoly) {
 								tmpcon.increment_hull(trp);
+							}
 
 							double conarea = areasc * M.areaAbs(tmpcon.convex);
 							double[] center = M.mean(trans_rot_outpoly);// trans_rot_outpoly
@@ -233,8 +234,9 @@ public class Pack {
 				}
 			} // for each vertex of new strip
 		} // for each angle of new strip
-		if (0 > min_rotid) // no solution, stop
+		if (0 > min_rotid) { // no solution, stop
 			return false;
+		}
 		stp.fix_rotate_move(trigos[min_rotid], min_trans);
 		// movs.remove(sid);
 		movs.set(sid, null);
@@ -245,14 +247,14 @@ public class Pack {
 
 	private boolean feasible(double[][] poly) {
 		for (double[] p : poly) {
-			if (p[0] < 0 || p[0] > WID)
+			if (p[0] < 0 || p[0] > width || p[1] < 0 || p[1] > height) {
 				return false;
-			if (p[1] < 0 || p[1] > HEI)
-				return false;
+			}
 		}
 		for (Strip fixed : fixs) {
-			if (overlap(poly, fixed.inps))
+			if (overlap(poly, fixed.inps)) {
 				return false;
+			}
 		}
 		return true;
 	}
@@ -260,30 +262,40 @@ public class Pack {
 	public int[] getStripIds() {
 		int size = fixs.size();
 		int[] ids = new int[size];
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i < size; i++) {
 			ids[i] = fixs.get(i).id;
+		}
 		return ids;
 	}
 
 	public double[][] getStripRotations() {
 		int size = fixs.size();
 		double[][] rots = new double[size][];
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i < size; i++) {
 			rots[i] = fixs.get(i).trigo;
+		}
 		return rots;
 	}
 
 	public double[][] getStripPositions() {
 		int size = fixs.size();
 		double[][] ps = new double[size][];
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i < size; i++) {
 			ps[i] = fixs.get(i).position;
+		}
 		return ps;
 	}
 
-	private static boolean overlap(double[][] poly1, double[][] poly2) {
-		if (!M.intersect_boundBox(poly1, poly2))
+	/**
+	 * Algorithm spends most time here!
+	 * @param poly1
+	 * @param poly2
+	 * @return
+	 */
+	private static final boolean overlap(final double[][] poly1, final double[][] poly2) {
+		if (!M.intersect_boundBox(poly1, poly2)) {
 			return false;
+		}
 		double[][] sml, big;
 		if (M.areaAbs(poly1) < M.areaAbs(poly2)) {
 			sml = poly1;
@@ -293,16 +305,30 @@ public class Pack {
 			big = poly1;
 		}
 		for (double[] p : sml) {
-			if (M.inside(p, big))
+			if (M.inside(p, big)) {
 				return true;
+			}
 		}
 		for (int i = 0; i < sml.length; i++) {
 			for (int j = 0; j < big.length; j++) {
-				if (M.intersection(sml[i], sml[(i + 1) % sml.length], big[j], big[(j + 1) % big.length]))
+				if (M.intersection(sml[i], sml[(i + 1) % sml.length], big[j], big[(j + 1) % big.length])) {
 					return true;
+				}
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public Pack clone() {
+		Pack np = new Pack(trigos, rotSteps, width, height, preferX);
+		np.movs = movs;
+		np.cntConvex = cntConvex;
+		return np;
+	}
+
+	public boolean isEmpty() {
+		return movs.isEmpty();
 	}
 
 }
