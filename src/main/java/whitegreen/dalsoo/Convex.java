@@ -5,6 +5,7 @@ import java.util.ArrayList;
 //Hao Hua, Southeast University, whitegreen@163.com
 
 public class Convex {
+
 	public ArrayList<double[]> convex; // convex is clockwise
 	private static final double area_zero = 1E-6; // for mm
 

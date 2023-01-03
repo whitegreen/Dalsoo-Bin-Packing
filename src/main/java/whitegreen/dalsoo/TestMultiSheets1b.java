@@ -96,11 +96,11 @@ public class TestMultiSheets1b extends PApplet {
 		Pack pack = new Pack(randompolys, margin, segment_len, rotSteps, WID, HEI, preferX);
 		pack.packOneSheet(useAbey);
 		packs.add(pack);
-		
-		while(!packs.get(packs.size() - 1).isEmpty()) {
+
+		while (!packs.get(packs.size() - 1).isEmpty()) {
 			pack = packs.get(packs.size() - 1).clone();
 			pack.packOneSheet(useAbey);
-			packs.add(pack);			
+			packs.add(pack);
 		}
 
 //		for (int i = 0; i < 100; i++) { // packing one sheet after another, 100 is estimated
@@ -210,7 +210,7 @@ public class TestMultiSheets1b extends PApplet {
 				}
 				Pack pack = packs.get(id);
 				pushMatrix();
-				translate(j * (sc*WID), i * (sc*height)); // (j * 270, i * 150
+				translate(j * (sc * WID), i * (sc * height)); // (j * 270, i * 150
 				noFill();
 				rect(0, 0, sc * WID, sc * HEI);
 				fill(0, 255, 0);

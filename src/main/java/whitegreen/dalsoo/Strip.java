@@ -5,7 +5,7 @@ import java.util.ArrayList;
 //Hao Hua, Southeast University, whitegreen@163.com
 
 public class Strip implements Comparable<Strip> {
-	
+
 	public double[][] outps; // offset & add edge points , as referent point of placement, clock-wise
 	public final double[][] inps; // original polygon, for 1. convex, 2. intersection
 	public final double inarea;
@@ -52,11 +52,6 @@ public class Strip implements Comparable<Strip> {
 		} // if
 	}
 
-	@Override
-	public int compareTo(Strip pl) {
-		return Double.compare(this.inarea, pl.inarea);
-	}
-
 	public void fix_rotate_move(double[] cossin, double[] dv) { // finalize
 		trigo = cossin.clone();
 		position = dv.clone();
@@ -74,6 +69,11 @@ public class Strip implements Comparable<Strip> {
 			double y = sin * p[0] + cos * p[1];
 			outps[i] = new double[] { dv[0] + x, dv[1] + y };
 		}
+	}
+
+	@Override
+	public int compareTo(Strip pl) {
+		return Double.compare(this.inarea, pl.inarea);
 	}
 
 }
