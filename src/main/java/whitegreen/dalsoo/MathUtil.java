@@ -2,6 +2,9 @@ package whitegreen.dalsoo;
 
 import java.util.ArrayList;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 
@@ -9,7 +12,7 @@ import net.jafama.FastMath;
 
 //Hao Hua, Southeast University, whitegreen@163.com
 
-public final class M {
+public final class MathUtil {
 
 	private static final double denominator_lim = 1e-10;
 	private static final BufferParameters bp = new BufferParameters(8, BufferParameters.CAP_FLAT, BufferParameters.JOIN_MITRE,
@@ -73,8 +76,8 @@ public final class M {
 	}
 
 	public static double triArea(double[] a, double[] b) {
-		double[] cross = M.cross(a, b);
-		return M.mag(cross) * 0.5;
+		double[] cross = MathUtil.cross(a, b);
+		return MathUtil.mag(cross) * 0.5;
 	}
 
 	public static double mag(double[] a) {
@@ -339,7 +342,7 @@ public final class M {
 	public static double[][] mul(double[][] m, int iteration) {
 		double[][] a = m;
 		for (int i = 0; i < iteration - 1; i++) {
-			a = M.mul(a, m);
+			a = MathUtil.mul(a, m);
 		}
 		return a;
 	}
@@ -458,10 +461,30 @@ public final class M {
 				 * Fall back to JTS buffer if lineIntersect returns null for any intersection
 				 * (occurs on rather concave shapes).
 				 */
-				return Pack.toArray(BufferOp.bufferOp(Pack.toPolygon(poly), distance, bp).getCoordinates());
+				return toArray(BufferOp.bufferOp(toPolygon(poly), distance, bp).getCoordinates());
 			}
 		}
 		return ps;
+	}
+	
+	private static final GeometryFactory GEOM_FACT = new GeometryFactory();
+	
+	private static Polygon toPolygon(double[][] poly) {
+		Coordinate[] coords = new Coordinate[poly.length + 1];
+		for (int i = 0; i < coords.length - 1; i++) {
+			coords[i] = new Coordinate(poly[i][0], poly[i][1]);
+		}
+		coords[coords.length - 1] = new Coordinate(poly[0][0], poly[0][1]); // close
+		return GEOM_FACT.createPolygon(coords);
+	}
+
+	private static double[][] toArray(Coordinate[] coords) {
+		double[][] poly = new double[coords.length - 1][2];
+		for (int i = 0; i < coords.length - 1; i++) { // -1, unclose
+			poly[i][0] = coords[i].x;
+			poly[i][1] = coords[i].y;
+		}
+		return poly;
 	}
 
 	public static double[] point_Project_Plane(double[] q, double[] p, double[] n) { // q is the point
@@ -623,10 +646,10 @@ public final class M {
 	public static double[] rotate_Rodriguez(double[] v, double theta, double[] dir) {
 		double cos = FastMath.cos(theta);
 		double sin = FastMath.sin(theta);
-		double[] v1 = M.scale(cos, v);
-		double[] v2 = M.scale((1 - cos) * dot(v, dir), dir);
-		double[] v3 = M.scale(sin, cross(dir, v));
-		return M.add(v1, M.add(v2, v3));
+		double[] v1 = MathUtil.scale(cos, v);
+		double[] v2 = MathUtil.scale((1 - cos) * dot(v, dir), dir);
+		double[] v3 = MathUtil.scale(sin, cross(dir, v));
+		return MathUtil.add(v1, MathUtil.add(v2, v3));
 	}
 
 	public static boolean inside(double[] p, double[][] vs) {
@@ -692,8 +715,8 @@ public final class M {
 	public static double[][] exp(double[][] m, int iteration) {
 		double[][] re = I(m.length);
 		for (int i = 0; i < iteration; i++) {
-			double[][] tmp = M.scale(mul(m, i + 1), 1.0 / powerInt(i + 1));
-			re = M.add(re, tmp);
+			double[][] tmp = MathUtil.scale(mul(m, i + 1), 1.0 / powerInt(i + 1));
+			re = MathUtil.add(re, tmp);
 		}
 		return re;
 	}
@@ -704,8 +727,8 @@ public final class M {
 			tr += rotate_matrix[i][i];
 		}
 		double theta = FastMath.acos(0.5 * (tr - 1));
-		double[][] t = M.sub(rotate_matrix, M.transpose(rotate_matrix));
-		double[][] re = M.scale(t, 0.5 * theta / FastMath.sin(theta)); // sin(0)*************
+		double[][] t = MathUtil.sub(rotate_matrix, MathUtil.transpose(rotate_matrix));
+		double[][] re = MathUtil.scale(t, 0.5 * theta / FastMath.sin(theta)); // sin(0)*************
 		return re;
 	}
 
@@ -720,12 +743,12 @@ public final class M {
 	}
 
 	public static double[][] exp(double[] ele) { // algebra to group
-		double sq_theta = M.mag_sq(ele);
+		double sq_theta = MathUtil.mag_sq(ele);
 		double theta = FastMath.sqrt(sq_theta);
 		double[][] ele_mat = algebra_matrix(ele);
 		double[][] re = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
-		re = M.add(re, M.scale(ele_mat, FastMath.sin(theta) / theta));
-		return M.add(re, M.scale(M.mul(ele_mat, ele_mat), (1 - FastMath.cos(theta)) / sq_theta));
+		re = MathUtil.add(re, MathUtil.scale(ele_mat, FastMath.sin(theta) / theta));
+		return MathUtil.add(re, MathUtil.scale(MathUtil.mul(ele_mat, ele_mat), (1 - FastMath.cos(theta)) / sq_theta));
 	}
 
 }

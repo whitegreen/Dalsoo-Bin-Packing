@@ -1,0 +1,410 @@
+package whitegreen.dalsoo;
+
+import static java.lang.Math.PI;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
+import net.jafama.FastMath;
+
+/**
+ * Bin-packs irregular shapes sequentially.
+ * <p>
+ * Algorithms are adapted from the papers of Abeysooriya 2018 and Dalalah 2014.
+ * Bin packing places a given set of polygons in standard single/multiple
+ * rectangular sheet(s), minimising the use of the sheet(s).
+ * 
+ * @author Hao Hua, Southeast University, whitegreen@163.com
+ * @author Michael Carleton
+ *
+ */
+public final class DalsooPack {
+
+	public List<PackedPoly> packedPolys = new ArrayList<>();
+	List<PackedPoly> pendingPolys = new ArrayList<>();
+	Convex cntConvex;
+	
+	/** Sin and cos values for each rotation step. */
+	private final double[][] trigos;
+	private final int rotSteps;
+	/** bin dimensions */
+	private final double width, height;
+	private static final double areasc = 1E-6;
+	private final double preferX;
+
+	DalsooPack(double[][] trigos, int rotSteps, double width, double height, double preferX) {
+		this.trigos = trigos;
+		this.rotSteps = rotSteps;
+		this.width = width;
+		this.height = height;
+		this.preferX = preferX;
+	}
+
+	/**
+	 * Creates an packing. Call {@link #packOneBin(boolean, boolean)} to start
+	 * packing.
+	 * 
+	 * @param polys              array of polygons [p1, p2]; for each polygon, its
+	 *                           vertices are expressed in [x, y] coordinate pairs:
+	 *                           [[p1x, p1y], [p2x, p2y]...]. Polygons should be
+	 *                           simple, having no holes and no self-intersection.
+	 * @param spacing            boundary spacing between packed objects.
+	 * @param segment_max_length
+	 * @param rotSteps           number of unique rotation variants of each polygon.
+	 *                           a larger number results in higher-quality packing
+	 *                           but longer runtime (not used in abey packing).
+	 * @param width              width of each bin
+	 * @param height             height of each bin
+	 * @param hSkew              horizontal skew [0...1]. Determines to what extent
+	 *                           shapes are packed horizontally (vs vertically).
+	 *                           i.e. When =1.0, shapes will start packing against
+	 *                           the y axis, and fill left-to-right (horizontal);
+	 *                           When =0.0, shapes will pack from the x-axis and
+	 *                           fill top-to-bottom (vertical).
+	 */
+	public DalsooPack(double[][][] polys, double spacing, Double segment_max_length, int rotSteps, double width, double height,
+			double hSkew) {
+		if (0 > hSkew || 1 < hSkew) {
+			throw new IllegalArgumentException("skew must be between 0 and 1 (inclusive)");
+		}
+		for (int i = 0; i < polys.length; i++) {
+			double[][] poly = polys[i];
+			PackedPoly strip = new PackedPoly(i, poly, spacing, segment_max_length);
+			pendingPolys.add(strip);
+		}
+		this.preferX = hSkew;
+
+		this.rotSteps = rotSteps;
+		trigos = new double[rotSteps][];
+		for (int i = 0; i < rotSteps; i++) {
+			double theta = i * 2 * PI / rotSteps;
+			trigos[i] = new double[] { FastMath.cos(theta), FastMath.sin(theta) };
+		}
+		this.width = width;
+		this.height = height;
+	}
+
+	/**
+	 * Packs all polygons, possibly across multiple bins.
+	 * 
+	 * @param abey
+	 */
+	public void packAll(boolean abey) {
+
+	}
+
+	/**
+	 * 
+	 * @param abey
+	 * @param largestFirst sort the polygons by area and pack
+	 */
+	public void packOneBin(boolean abey, boolean largestFirst) {
+		if (largestFirst) {
+			Collections.sort(pendingPolys); // sort by area, smallest first
+		}
+		packFirstPoly();
+		int size = pendingPolys.size();
+		for (int i = 0; i < size; i++) {
+			// place next largest polygon
+			if (abey) {
+				packPolyAbey(size - 1 - i);
+			} else {
+				packPolyDalalah(size - 1 - i);
+			}
+		}
+		
+		pendingPolys.removeIf(Objects::isNull);
+	}
+
+	private void packFirstPoly() {
+		int rotid = 0;
+		double minArea = 1000000000;
+		int sid = pendingPolys.size() - 1; // ***************************************** last one
+		PackedPoly first = pendingPolys.get(sid);
+		for (int i = 0; i < rotSteps; i++) {
+			double[][] tp = MathUtil.rotate(trigos[i], first.outps);
+			double[] bd = MathUtil.boundBox(tp); // minx, maxx, miny, maxy
+			if (bd[1] - bd[0] > width || bd[3] - bd[2] > height) {
+				continue;
+			}
+			double area = areasc * (bd[1] - bd[0]) * (bd[3] - bd[2]);
+			double[] center = MathUtil.mean(tp);
+			double len = preferX * (center[0] - bd[0]) + (1 - preferX) * (center[1] - bd[2]);
+			area *= len;
+			if (minArea > area) {
+				minArea = area;
+				rotid = i;
+			}
+		}
+		double[][] tp = MathUtil.rotate(trigos[rotid], first.outps);
+		double[] bd = MathUtil.boundBox(tp);
+		first.fix_rotate_move(trigos[rotid], new double[] { -bd[0], -bd[2] });
+		pendingPolys.remove(sid);
+		placePackedPoly(first);
+		cntConvex = new Convex(first);
+	}
+
+	private boolean packPolyAbey(int sid) {
+		PackedPoly stp = pendingPolys.get(sid);
+		double min = 1000000000;
+		double[] min_cossin = null;
+		double[] min_trans = null;
+		Convex min_con = null;
+		double[][] opl = stp.outps;
+		for (int i = 0; i < opl.length; i++) { // each vertex of new strip
+			double[] p = opl[i];
+			double[] d0 = MathUtil.sub(opl[(i - 1 + opl.length) % opl.length], p);
+			double[] d2 = MathUtil.sub(opl[(i + 1) % opl.length], p);
+			double mag0 = MathUtil.mag(d0);
+			double mag2 = MathUtil.mag(d2);
+			double cb0 = d0[0] / mag0;
+			double sb0 = d0[1] / mag0;
+			double cb2 = d2[0] / mag2;
+			double sb2 = d2[1] / mag2;
+
+			for (PackedPoly fixed : packedPolys) {
+				double[][] fopl = fixed.outps;
+				for (int j = 0; j < fopl.length; j++) { // each vertex of each fixed strip
+					double[] v = fopl[j];
+					double[] t0 = MathUtil.sub(fopl[(j - 1 + fopl.length) % fopl.length], v);
+					double[] t2 = MathUtil.sub(fopl[(j + 1) % fopl.length], v);
+					double m0 = MathUtil.mag(t0);
+					double m2 = MathUtil.mag(t2);
+					double ca0 = t0[0] / m0;
+					double sa0 = t0[1] / m0;
+					double ca2 = t2[0] / m2;
+					double sa2 = t2[1] / m2;
+
+					for (int h = 0; h < 2; h++) { // two angles
+						double[] cossin;
+						if (0 == h) {
+							cossin = new double[] { ca0 * cb2 + sa0 * sb2, sa0 * cb2 - ca0 * sb2 }; // a0 - b2
+						} else {
+							cossin = new double[] { ca2 * cb0 + sa2 * sb0, sa2 * cb0 - ca2 * sb0 };// a2 - b0
+						}
+
+						double[][] rot_opl = MathUtil.rotate(cossin, opl);
+						double[] trans = MathUtil.sub(v, rot_opl[i]); // *****************
+						double[][] trans_rot_outpoly = MathUtil.move(trans, rot_opl);
+						if (isFeasible(trans_rot_outpoly)) {
+							double[][] trans_rot_inpoly = MathUtil.move(trans, MathUtil.rotate(cossin, stp.inps));
+							Convex tmpcon = cntConvex.clone();
+							for (double[] trp : trans_rot_inpoly) {
+								tmpcon.increment_hull(trp);
+							}
+
+							double conarea = areasc * MathUtil.areaAbs(tmpcon.convex);
+							double[] center = MathUtil.mean(trans_rot_inpoly);
+							double area;
+							area = conarea * (preferX * Math.abs(center[0]) + (1 - preferX) * Math.abs(center[1]));
+							if (min > area) {
+								min = area;
+								min_cossin = cossin;
+								min_trans = trans;
+								min_con = tmpcon;
+							}
+						}
+					} // for h
+				}
+			}
+		} // for each vertex of new strip
+		if (null == min_cossin) { // no solution, stop
+			return false;
+		}
+		stp.fix_rotate_move(min_cossin, min_trans);
+		pendingPolys.set(sid, null); // done, mark as null
+		placePackedPoly(stp);
+		cntConvex = min_con;
+		return true;
+	}
+
+	private boolean packPolyDalalah(int sid) {
+		PackedPoly stp = pendingPolys.get(sid);
+		double min = 1000000000;
+		int min_rotid = -1;
+		double[] min_trans = null;
+		Convex min_con = null;
+		for (int i = 0; i < rotSteps; i++) {// each angle of new strip
+			double[][] rotated_outpoly = MathUtil.rotate(trigos[i], stp.outps);
+			double[][] rotated_inpoly = MathUtil.rotate(trigos[i], stp.inps);
+
+			for (double[] p : rotated_outpoly) { // each vertex of new strip
+				for (PackedPoly fixed : packedPolys) {
+					for (double[] v : fixed.outps) { // each vertex of each fixed strip
+						double[] trans = MathUtil.sub(v, p);
+						double[][] trans_rot_outpoly = MathUtil.move(trans, rotated_outpoly);
+						if (isFeasible(trans_rot_outpoly)) {
+							double[][] trans_rot_inpoly = MathUtil.move(trans, rotated_inpoly);
+							Convex tmpcon = cntConvex.clone();
+							for (double[] trp : trans_rot_inpoly) {
+								tmpcon.increment_hull(trp);
+							}
+
+							double conarea = areasc * MathUtil.areaAbs(tmpcon.convex);
+							double[] center = MathUtil.mean(trans_rot_outpoly);// trans_rot_outpoly
+							double area = conarea * (preferX * Math.abs(center[0]) + Math.abs(center[1]));
+							if (min > area) {
+								min = area;
+								min_rotid = i;
+								min_trans = trans;
+								min_con = tmpcon;
+							}
+						}
+					}
+				}
+			} // for each vertex of new strip
+		} // for each angle of new strip
+		if (0 > min_rotid) { // no solution, stop
+			return false;
+		}
+		stp.fix_rotate_move(trigos[min_rotid], min_trans);
+		// movs.remove(sid);
+		pendingPolys.set(sid, null);
+		placePackedPoly(stp);
+		cntConvex = min_con;
+		return true;
+	}
+
+	/**
+	 * Determines whether the potential polygon can be placed.
+	 */
+	private boolean isFeasible(double[][] poly) {
+		for (double[] p : poly) {
+			if (p[0] < 0 || p[0] > width || p[1] < 0 || p[1] > height) {
+				// out of bounds -- infeasible!
+				return false;
+			}
+		}
+		final double[] bb = MathUtil.boundBox(poly);
+
+		for (PackedPoly fixed : packedPolys) {
+			if (overlapFast(poly, bb, fixed)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * @deprecated
+	 */
+	private static final boolean overlap(final double[][] poly1, final double[][] poly2) {
+		if (!MathUtil.intersect_boundBox(poly1, poly2)) {
+			return false;
+		}
+		double[][] sml, big;
+		if (MathUtil.areaAbs(poly1) < MathUtil.areaAbs(poly2)) {
+			sml = poly1;
+			big = poly2;
+		} else {
+			sml = poly2;
+			big = poly1;
+		}
+		for (double[] p : sml) {
+			if (MathUtil.inside(p, big)) {
+				return true;
+			}
+		}
+		for (int i = 0; i < sml.length; i++) {
+			for (int j = 0; j < big.length; j++) {
+				if (MathUtil.intersection(sml[i], sml[(i + 1) % sml.length], big[j], big[(j + 1) % big.length])) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Determines whether potential poly overlaps with placed poly.
+	 * 
+	 * @param poly1     vertices of poly 1
+	 * @param poly1BB   bounding box of poly 1
+	 * @param poly1Area area of poly 1
+	 * @param poly2     vertices of poly 2
+	 * @return
+	 */
+	private static final boolean overlapFast(final double[][] poly1, final double[] poly1BB, final PackedPoly strip) {
+
+		// 1. test bounding boxes
+		if (!MathUtil.intersect_boundBoxes(poly1BB, strip.bb)) {
+			return false;
+		}
+		// 2. test the centroid against candidate poly
+		/*
+		 * NOTE this isn't completely robust (a robust method would test every point of
+		 * strip against candidate) but would catch almost all occurrences (so is worth
+		 * the speed-up overall).
+		 */
+		if (MathUtil.inside(strip.centroid, poly1)) {
+			return true;
+		}
+
+		// 3. test edge intersections
+		for (int i = 0; i < poly1.length; i++) {
+			for (int j = 0; j < strip.inps.length; j++) {
+				if (MathUtil.intersectionFast(poly1[i], poly1[(i + 1) % poly1.length], strip.inps[j],
+						strip.inps[(j + 1) % strip.inps.length])) {
+					return true;
+				}
+			}
+		}
+		return false;
+
+	}
+
+	private void placePackedPoly(PackedPoly strip) {
+		strip.place();
+		packedPolys.add(strip);
+	}
+
+	public double getEmptyArea() {
+		double sum = 0;
+		for (PackedPoly strip : pendingPolys) {
+			sum += strip.inarea;
+		}
+		return sum;
+	}
+
+	public int[] getPackingIds() {
+		int size = packedPolys.size();
+		int[] ids = new int[size];
+		for (int i = 0; i < size; i++) {
+			ids[i] = packedPolys.get(i).id;
+		}
+		return ids;
+	}
+
+	public double[][] getPackingRotations() {
+		int size = packedPolys.size();
+		double[][] rots = new double[size][];
+		for (int i = 0; i < size; i++) {
+			rots[i] = packedPolys.get(i).trigo;
+		}
+		return rots;
+	}
+
+	public double[][] getPackingPositions() {
+		int size = packedPolys.size();
+		double[][] ps = new double[size][];
+		for (int i = 0; i < size; i++) {
+			ps[i] = packedPolys.get(i).position;
+		}
+		return ps;
+	}
+
+	@Override
+	public DalsooPack clone() {
+		DalsooPack np = new DalsooPack(trigos, rotSteps, width, height, preferX);
+		np.pendingPolys = pendingPolys;
+		np.cntConvex = cntConvex;
+		return np;
+	}
+
+	public boolean isEmpty() {
+		return pendingPolys.isEmpty();
+	}
+
+}

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 //Hao Hua, Southeast University, whitegreen@163.com
 
-public class Convex {
+class Convex {
 
 	public ArrayList<double[]> convex; // convex is clockwise
 	private static final double area_zero = 1E-6; // for mm
@@ -21,7 +21,7 @@ public class Convex {
 	public Convex() {
 	}
 	
-	public Convex(Strip strip) {
+	public Convex(PackedPoly strip) {
 		double[][] points = strip.inps;
 		double area = strip.inarea;
 		if (Math.abs(area) < area_zero) {
@@ -43,7 +43,7 @@ public class Convex {
 	}
 
 	public void increment_hull(double[] np) { // convex is clockwise
-		if (M.inside(np, convex)) {
+		if (MathUtil.inside(np, convex)) {
 			return;
 		}
 		int size = convex.size();
@@ -52,8 +52,8 @@ public class Convex {
 		for (int i = 0; i < size; i++) {
 			double[] q0 = convex.get(i);
 			double[] q1 = convex.get((i + 1) % size);
-			double[] d = M.sub(q1, q0);
-			double[] a = M.sub(np, q0);
+			double[] d = MathUtil.sub(q1, q0);
+			double[] a = MathUtil.sub(np, q0);
 			visible[i] = -d[1] * a[0] + d[0] * a[1] > 0; // n={-d[1], d[0]} on the left
 			if (visible[i]) {
 				hasTure = true;

@@ -7,9 +7,7 @@ import java.util.ArrayList;
  * @author Hao Hua, Southeast University, whitegreen@163.com
  *
  */
-public class Strip implements Comparable<Strip> {
-
-//	private static final
+public class PackedPoly implements Comparable<PackedPoly> {
 
 	public double[][] outps; // offset & add edge points , as referent point of placement, clock-wise
 	public final double[][] inps; // original polygon, for 1. convex, 2. intersection
@@ -18,36 +16,36 @@ public class Strip implements Comparable<Strip> {
 	public double[] position;
 	public final int id;
 
-	public Strip(int id, double[][] original_poly, double spacing, Double segment_max_length) {
+	PackedPoly(int id, double[][] original_poly, double spacing, Double segmentMaxLength) {
 		this.id = id;
 		if (spacing < 0) {
 			throw new IllegalArgumentException("spacing must be >=0");
 		}
-		double area = M.area(original_poly);
+		double area = MathUtil.area(original_poly);
 		if (0 < area) {
-			inps = M.clone(original_poly);
+			inps = MathUtil.clone(original_poly);
 		} else {
 			inps = new double[original_poly.length][];
 			for (int i = 0; i < inps.length; i++) {
 				inps[i] = original_poly[inps.length - 1 - i].clone();
 			}
 		}
-		
-		inarea = Math.abs(area);
-		outps = M.buffer(inps, spacing); // clockwise
 
-		if (segment_max_length != null) {
+		inarea = Math.abs(area);
+		outps = MathUtil.buffer(inps, spacing); // clockwise
+
+		if (segmentMaxLength != null && segmentMaxLength > 0) {
 			ArrayList<double[]> list = new ArrayList<>();
 			for (int i = 0; i < outps.length; i++) {
 				double[] pa = outps[i];
 				double[] pb = outps[(i + 1) % outps.length];
 				list.add(pa);
-				double dis = M.dist(pa, pb);
-				if (segment_max_length < dis) {
-					int num = 1 + (int) (dis / segment_max_length);
+				double dis = MathUtil.dist(pa, pb);
+				if (segmentMaxLength < dis) {
+					int num = 1 + (int) (dis / segmentMaxLength);
 					for (int j = 1; j < num; j++) {
 						double s = (double) j / num;
-						list.add(M.between(s, pa, pb));
+						list.add(MathUtil.between(s, pa, pb));
 					}
 				}
 			} // for
@@ -58,7 +56,7 @@ public class Strip implements Comparable<Strip> {
 		} // if
 	}
 
-	public void fix_rotate_move(double[] cossin, double[] dv) { // finalize
+	void fix_rotate_move(double[] cossin, double[] dv) { // finalize
 		trigo = cossin.clone();
 		position = dv.clone();
 		double cos = trigo[0];
@@ -81,16 +79,16 @@ public class Strip implements Comparable<Strip> {
 	double[] centroid;
 
 	/**
-	 * Call when strip is fixed. Will pre-compute and save values used for overlap
-	 * detection.
+	 * Call when placed in the bin. Will pre-compute and save values used for
+	 * overlap detection against future polygons.
 	 */
-	public void fix() {
-		bb = M.boundBox(inps);
-		centroid = M.center(inps);
+	void place() {
+		bb = MathUtil.boundBox(inps);
+		centroid = MathUtil.center(inps);
 	}
 
 	@Override
-	public int compareTo(Strip pl) {
+	public int compareTo(PackedPoly pl) {
 		return Double.compare(this.inarea, pl.inarea);
 	}
 

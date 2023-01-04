@@ -45,31 +45,31 @@ import processing.core.PApplet;
  *         3. Output
  *
  */
-public class TestMultiSheets1b extends PApplet {
+public class DemoApplet extends PApplet {
 	// https://github.com/whitegreen/Dalsoo-Bin-Packing
 
 	public static void main(String[] args) {
 		System.setProperty("sun.java2d.uiScale", "1.0");
 		System.setProperty("prism.allowhidpi", "false");
-		PApplet.main(TestMultiSheets1b.class);
+		PApplet.main(DemoApplet.class);
 	}
 
 	private Random ran;
 
 	// input
 	private double[][][] randompolys; // the input polygons
-	private final float WID = 2400 * 2; // width of the standard rectangular sheet
-	private final float HEI = 1200 * 2;
-	private final double margin = 4.0;
+	private final float WID = 2400 * 4; // width of the standard rectangular sheet
+	private final float HEI = 1200 * 4;
+	private final double margin = 3.0;
 	// when 0, polys will pack horizontally, 1= vertically
-	private final double preferX = .666; // 0.501 or 1
+	private final double preferX = 0; // 0.501 or 1
 
 	// parameters
-	private final double segment_max_length = 400.0; // 250,400,800, use to break long edges if necessary, relative to the scale
+	private final double segment_max_length = 4000.0; // 250,400,800, use to break long edges if necessary, relative to the scale
 														// of the polgyons
 	private final int rotSteps = 10; // 18,24,36,48, rotation steps
 	private boolean useAbey = true;
-	private ArrayList<Pack> packs = new ArrayList<>();
+	private ArrayList<DalsooPack> packs = new ArrayList<>();
 	// true: rotation steps depend on polygons, R. P. Abeysooriya 2018
 	// false: rotation steps are a prior, D. Dalalah, 2014
 
@@ -90,16 +90,16 @@ public class TestMultiSheets1b extends PApplet {
 		long t0 = System.currentTimeMillis();
 		int seed = 4346;
 		ran = new Random(0);
-		randompolys = randomPolygons(350);// prepare the input polygons
+		randompolys = randomPolygons(320);// prepare the input polygons
 
 		Double segment_len = useAbey ? null : segment_max_length;
-		Pack pack = new Pack(randompolys, margin, segment_len, rotSteps, WID, HEI, preferX);
-		pack.packOneSheet(useAbey);
+		DalsooPack pack = new DalsooPack(randompolys, margin, segment_len, rotSteps, WID, HEI, preferX);
+		pack.packOneBin(useAbey, false);
 		packs.add(pack);
 
 		while (!packs.get(packs.size() - 1).isEmpty()) {
 			pack = packs.get(packs.size() - 1).clone();
-			pack.packOneSheet(useAbey);
+			pack.packOneBin(useAbey, false);
 			packs.add(pack);
 		}
 
@@ -123,8 +123,8 @@ public class TestMultiSheets1b extends PApplet {
 		result_cos_sin = new double[randompolys.length][];
 		result_position = new double[randompolys.length][];
 		for (int i = 0; i < packs.size(); i++) {
-			Pack pack = packs.get(i);
-			for (Strip strip : pack.fixs) {
+			DalsooPack pack = packs.get(i);
+			for (PackedPoly strip : pack.packedPolys) {
 				result_pack_id[strip.id] = i;
 				result_cos_sin[strip.id] = strip.trigo;
 				result_position[strip.id] = strip.position;
@@ -155,7 +155,7 @@ public class TestMultiSheets1b extends PApplet {
 			double dx = ran.nextDouble() * 1000;
 			double dy = ran.nextDouble() * 1000;
 			for (double[] p : poly) {
-				M._add(p, new double[] { dx, dy });
+				MathUtil._add(p, new double[] { dx, dy });
 			}
 		}
 		return polys;
@@ -168,7 +168,7 @@ public class TestMultiSheets1b extends PApplet {
 		double cos = FastMath.cos(theta);
 		double sin = FastMath.sin(theta);
 		for (int i = 0; i < ps.length; i++) {
-			double[] p = M.scale(sng, ps[i]);
+			double[] p = MathUtil.scale(sng, ps[i]);
 			p[0] += (ran.nextDouble() - 0.5) * 0.25 * s;
 			p[1] += (ran.nextDouble() - 0.5) * 0.25 * s;
 			double x = cos * p[0] + sin * p[1];
@@ -208,13 +208,13 @@ public class TestMultiSheets1b extends PApplet {
 				if (id >= packs.size()) {
 					return;
 				}
-				Pack pack = packs.get(id);
+				DalsooPack pack = packs.get(id);
 				pushMatrix();
 				translate(j * (sc * WID), i * (sc * height)); // (j * 270, i * 150
 				noFill();
 				rect(0, 0, sc * WID, sc * HEI);
 				fill(0, 255, 0);
-				for (Strip strip : pack.fixs) {
+				for (PackedPoly strip : pack.packedPolys) {
 					draw(strip.inps, sc);
 				}
 				popMatrix();
