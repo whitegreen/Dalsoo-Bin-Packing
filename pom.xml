@@ -4,6 +4,9 @@
 	<artifactId>dalsoopack</artifactId>
 	<version>0.9-SNAPSHOT</version>
 	<name>Dalsoo Bin-Packing</name>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 	<build>
 		<plugins>
 			<plugin>
@@ -13,6 +16,33 @@
 					<source>1.8</source>
 					<target>1.8</target>
 				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.2.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.4.1</version>
+				<configuration>
+					<failOnError>false</failOnError>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -24,11 +54,6 @@
 	</repositories>
 	<dependencies>
 		<dependency>
-			<groupId>com.github.micycle1</groupId>
-			<artifactId>processing3</artifactId>
-			<version>3.5.4</version>
-		</dependency>
-		<dependency>
 			<groupId>net.jafama</groupId>
 			<artifactId>jafama</artifactId>
 			<version>2.3.2</version>
@@ -37,6 +62,12 @@
 			<groupId>org.locationtech.jts</groupId>
 			<artifactId>jts-core</artifactId>
 			<version>1.19.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.micycle1</groupId>
+			<artifactId>processing3</artifactId>
+			<version>3.5.4</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>
