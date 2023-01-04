@@ -2,13 +2,18 @@ package whitegreen.dalsoo;
 
 import java.util.ArrayList;
 
+import org.locationtech.jts.operation.buffer.BufferOp;
+import org.locationtech.jts.operation.buffer.BufferParameters;
+
 import net.jafama.FastMath;
 
 //Hao Hua, Southeast University, whitegreen@163.com
 
 public final class M {
 
-	private static final double denominator_lim = 1e-32;
+	private static final double denominator_lim = 1e-10;
+	private static final BufferParameters bp = new BufferParameters(8, BufferParameters.CAP_FLAT, BufferParameters.JOIN_MITRE,
+			BufferParameters.DEFAULT_MITRE_LIMIT);
 
 	// math
 	// *************************************************************************************
@@ -241,7 +246,7 @@ public final class M {
 		return v;
 	}
 
-	double[] center(double[][] ps) {
+	static double[] center(double[][] ps) {
 		int len = ps[0].length;
 		double[] sum = new double[len];
 		for (double[] element : ps) {
@@ -400,6 +405,19 @@ public final class M {
 		return true;
 	}
 
+	/**
+	 * 
+	 * @param a [minx, maxx, miny, maxy]
+	 * @param b [minx, maxx, miny, maxy]
+	 * @return
+	 */
+	public static boolean intersect_boundBoxes(double[] a, double[] b) {
+		if (a[1] < b[0] || a[0] > b[1] || a[3] < b[2] || a[2] > b[3]) {
+			return false;
+		}
+		return true;
+	}
+
 	public static double[] boundBox(double[][] poly) { // orthogonal, minx, max, miny, maxy
 		double[] v = poly[0];
 		double minx = v[0];
@@ -424,8 +442,7 @@ public final class M {
 		return new double[] { minx, maxx, miny, maxy };
 	}
 
-	public static double[][] offset(final double distance, final double[][] poly) {
-		
+	public static double[][] buffer(final double[][] poly, final double distance) {
 		double[][] ps = new double[poly.length][];
 		for (int i = 0; i < poly.length; i++) {
 			double[] p = poly[i];
@@ -436,6 +453,13 @@ public final class M {
 			double[] pa = distance == 0 ? p : add(p, scaleTo(distance, na));
 			double[] pb = distance == 0 ? p : add(p, scaleTo(distance, nb));
 			ps[i] = lineIntersect(pa, va, pb, vb);
+			if (ps[i] == null) {
+				/*
+				 * Fall back to JTS buffer if lineIntersect returns null for any intersection
+				 * (occurs on rather concave shapes).
+				 */
+				return Pack.toArray(BufferOp.bufferOp(Pack.toPolygon(poly), distance, bp).getCoordinates());
+			}
 		}
 		return ps;
 	}
@@ -533,7 +557,7 @@ public final class M {
 		return a[0] * b[1] - a[1] * b[0];
 	}
 
-	public static double area(double[][] ps) { // signed
+	public static double area(final double[][] ps) { // signed
 		double sum = 0;
 		for (int i = 0; i < ps.length; i++) {
 			double[] pa = ps[i];
@@ -605,14 +629,6 @@ public final class M {
 		return M.add(v1, M.add(v2, v3));
 	}
 
-//	double[][] offset(double s, double[][] ps) {
-//		double[][] nps = new double[ps.length][];
-//		double[] cnt = center(ps);
-//		for (int i = 0; i < ps.length; i++)
-//			nps[i] = between(s, ps[i], cnt);
-//		return nps;
-//	}
-
 	public static boolean inside(double[] p, double[][] vs) {
 		int i, j = vs.length - 1;
 		boolean oddNodes = false;
@@ -645,7 +661,16 @@ public final class M {
 		return oddNodes;
 	}
 
-	public static boolean intersection(double[] a, double[] b, double[] c, double[] d) {
+	/**
+	 * Determines whether two line segments intersect.
+	 * 
+	 * @param a line 1 p1
+	 * @param b line 1 p2
+	 * @param c line 2 p1
+	 * @param d line 2 p2
+	 * @return
+	 */
+	public static boolean intersection(final double[] a, final double[] b, final double[] c, final double[] d) {
 		double[][] abd = { a, b, d };
 		double[][] abc = { a, b, c };
 		double[][] cda = { c, d, a };
@@ -653,14 +678,13 @@ public final class M {
 		return area(abd) * area(abc) < 0 && area(cda) * area(cdb) < 0;
 	}
 
-//	public static double[] lineIntersect(double[] p0, double[] n0, double[] p1, double[] n1){  //in 2d
-//		double cross_base= cross(n0, n1);
-//		   if(FastMath.abs(cross_base)<0.000001)//parallel
-//			   return  null;
-//		   double[] d= sub(p1,p0);
-//		   double s= cross(d, n1)/cross_base;
-//		   return new double[]{p0[0]+s*n0[0], p0[1]+s*n0[1]}; //TRICK 3D
-//		}
+	public static boolean intersectionFast(final double[] a, final double[] b, final double[] c, final double[] d) {
+		return triangleArea(a, b, d) * triangleArea(a, b, c) < 0 && triangleArea(c, d, a) * triangleArea(c, d, b) < 0;
+	}
+
+	public static double triangleArea(final double[] a, final double[] b, final double c[]) {
+		return (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1])); // omit /2
+	}
 
 	// special
 	// *************************************************************************************

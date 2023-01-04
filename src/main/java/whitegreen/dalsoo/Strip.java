@@ -2,9 +2,14 @@ package whitegreen.dalsoo;
 
 import java.util.ArrayList;
 
-//Hao Hua, Southeast University, whitegreen@163.com
-
+/**
+ * 
+ * @author Hao Hua, Southeast University, whitegreen@163.com
+ *
+ */
 public class Strip implements Comparable<Strip> {
+
+//	private static final
 
 	public double[][] outps; // offset & add edge points , as referent point of placement, clock-wise
 	public final double[][] inps; // original polygon, for 1. convex, 2. intersection
@@ -27,8 +32,9 @@ public class Strip implements Comparable<Strip> {
 				inps[i] = original_poly[inps.length - 1 - i].clone();
 			}
 		}
+		
 		inarea = Math.abs(area);
-		outps = M.offset(spacing, inps); // clockwise
+		outps = M.buffer(inps, spacing); // clockwise
 
 		if (segment_max_length != null) {
 			ArrayList<double[]> list = new ArrayList<>();
@@ -69,6 +75,18 @@ public class Strip implements Comparable<Strip> {
 			double y = sin * p[0] + cos * p[1];
 			outps[i] = new double[] { dv[0] + x, dv[1] + y };
 		}
+	}
+
+	double[] bb;
+	double[] centroid;
+
+	/**
+	 * Call when strip is fixed. Will pre-compute and save values used for overlap
+	 * detection.
+	 */
+	public void fix() {
+		bb = M.boundBox(inps);
+		centroid = M.center(inps);
 	}
 
 	@Override

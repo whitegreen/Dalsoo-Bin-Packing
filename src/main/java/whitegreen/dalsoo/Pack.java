@@ -2,14 +2,21 @@ package whitegreen.dalsoo;
 
 import static java.lang.Math.PI;
 
-//Hao Hua, Southeast University, whitegreen@163.com
-
 import java.util.ArrayList;
-import java.util.Collections;
-
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 import net.jafama.FastMath;
 
+/**
+ * 
+ * @author Hao Hua, Southeast University, whitegreen@163.com
+ * @author Michael Carleton
+ *
+ */
 public final class Pack {
+
+	private static final GeometryFactory GEOM_FACT = new GeometryFactory();
 
 	public ArrayList<Strip> fixs = new ArrayList<>();
 	public ArrayList<Strip> movs = new ArrayList<>();
@@ -53,7 +60,7 @@ public final class Pack {
 			Strip strip = new Strip(i, poly, spacing, segment_max_length);
 			movs.add(strip);
 		}
-		Collections.sort(movs); // sort by area, smallest first
+//		Collections.sort(movs); // sort by area, smallest first
 		this.preferX = preferX;
 
 		this.rotSteps = rotSteps;
@@ -85,7 +92,6 @@ public final class Pack {
 			list.add(stp);
 		}
 		movs = list;
-//		System.out.println(fixs.size() + "->" + movs.size());
 	}
 
 	private void place1stStrip() {
@@ -112,16 +118,8 @@ public final class Pack {
 		double[] bd = M.boundBox(tp);
 		first.fix_rotate_move(trigos[rotid], new double[] { -bd[0], -bd[2] });
 		movs.remove(sid);
-		fixs.add(first);
-		cntConvex = new Convex(first.inps);
-	}
-
-	public double leftOverArea() {
-		double sum = 0;
-		for (Strip strip : movs) {
-			sum += strip.inarea;
-		}
-		return sum;
+		placeStrip(first);
+		cntConvex = new Convex(first);
 	}
 
 	private boolean placeAnotherStrip_Abey(int sid) {
@@ -193,7 +191,7 @@ public final class Pack {
 		}
 		stp.fix_rotate_move(min_cossin, min_trans);
 		movs.set(sid, null);
-		fixs.add(stp);
+		placeStrip(stp);
 		cntConvex = min_con;
 		return true;
 	}
@@ -240,7 +238,7 @@ public final class Pack {
 		stp.fix_rotate_move(trigos[min_rotid], min_trans);
 		// movs.remove(sid);
 		movs.set(sid, null);
-		fixs.add(stp);
+		placeStrip(stp);
 		cntConvex = min_con;
 		return true;
 	}
@@ -248,15 +246,117 @@ public final class Pack {
 	private boolean feasible(double[][] poly) {
 		for (double[] p : poly) {
 			if (p[0] < 0 || p[0] > width || p[1] < 0 || p[1] > height) {
+				// out of bounds -- infeasible!
 				return false;
 			}
 		}
+		final double[] bb = M.boundBox(poly);
+
 		for (Strip fixed : fixs) {
-			if (overlap(poly, fixed.inps)) {
+			if (overlapFast(poly, bb, fixed)) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * @deprecated
+	 */
+	private static final boolean overlap(final double[][] poly1, final double[][] poly2) {
+		if (!M.intersect_boundBox(poly1, poly2)) {
+			return false;
+		}
+		double[][] sml, big;
+		if (M.areaAbs(poly1) < M.areaAbs(poly2)) {
+			sml = poly1;
+			big = poly2;
+		} else {
+			sml = poly2;
+			big = poly1;
+		}
+		for (double[] p : sml) {
+			if (M.inside(p, big)) {
+				return true;
+			}
+		}
+		for (int i = 0; i < sml.length; i++) {
+			for (int j = 0; j < big.length; j++) {
+				if (M.intersection(sml[i], sml[(i + 1) % sml.length], big[j], big[(j + 1) % big.length])) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Determines whether poly overlaps with strip.
+	 * 
+	 * @param poly1     vertices of poly 1
+	 * @param poly1BB   bounding box of poly 1
+	 * @param poly1Area area of poly 1
+	 * @param poly2     vertices of poly 2
+	 * @return
+	 */
+	private static final boolean overlapFast(final double[][] poly1, final double[] poly1BB, final Strip strip) {
+
+		// 1. test bounding boxes
+		if (!M.intersect_boundBoxes(poly1BB, strip.bb)) {
+			return false;
+		}
+		// 2. test the centroid against candidate poly
+		/*
+		 * NOTE this isn't completely robust (a robust method would test every point of
+		 * strip against candidate) but would catch almost all occurrences (so is worth
+		 * the speed-up overall).
+		 */
+		if (M.inside(strip.centroid, poly1)) {
+			return true;
+		}
+
+		// 3. test edge intersections
+		for (int i = 0; i < poly1.length; i++) {
+			for (int j = 0; j < strip.inps.length; j++) {
+				if (M.intersectionFast(poly1[i], poly1[(i + 1) % poly1.length], strip.inps[j],
+						strip.inps[(j + 1) % strip.inps.length])) {
+					return true;
+				}
+			}
+		}
+		return false;
+
+	}
+
+	private void placeStrip(Strip strip) {
+		strip.fix();
+		fixs.add(strip);
+	}
+
+	static Polygon toPolygon(double[][] poly) {
+		Coordinate[] coords = new Coordinate[poly.length + 1];
+		for (int i = 0; i < coords.length - 1; i++) {
+			coords[i] = new Coordinate(poly[i][0], poly[i][1]);
+		}
+		coords[coords.length - 1] = new Coordinate(poly[0][0], poly[0][1]); // close
+		return GEOM_FACT.createPolygon(coords);
+	}
+
+	static double[][] toArray(Coordinate[] coords) {
+		double[][] poly = new double[coords.length - 1][2];
+		for (int i = 0; i < coords.length - 1; i++) { // -1, unclose
+			poly[i][0] = coords[i].x;
+			poly[i][1] = coords[i].y;
+		}
+		return poly;
+	}
+
+	public double leftOverArea() {
+		double sum = 0;
+		for (Strip strip : movs) {
+			sum += strip.inarea;
+		}
+		return sum;
 	}
 
 	public int[] getStripIds() {
@@ -284,39 +384,6 @@ public final class Pack {
 			ps[i] = fixs.get(i).position;
 		}
 		return ps;
-	}
-
-	/**
-	 * Algorithm spends most time here!
-	 * @param poly1
-	 * @param poly2
-	 * @return
-	 */
-	private static final boolean overlap(final double[][] poly1, final double[][] poly2) {
-		if (!M.intersect_boundBox(poly1, poly2)) {
-			return false;
-		}
-		double[][] sml, big;
-		if (M.areaAbs(poly1) < M.areaAbs(poly2)) {
-			sml = poly1;
-			big = poly2;
-		} else {
-			sml = poly2;
-			big = poly1;
-		}
-		for (double[] p : sml) {
-			if (M.inside(p, big)) {
-				return true;
-			}
-		}
-		for (int i = 0; i < sml.length; i++) {
-			for (int j = 0; j < big.length; j++) {
-				if (M.intersection(sml[i], sml[(i + 1) % sml.length], big[j], big[(j + 1) % big.length])) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	@Override

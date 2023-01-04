@@ -20,10 +20,10 @@ public class Convex {
 
 	public Convex() {
 	}
-
-	public Convex(double[][] points) { // always ready for new points
-		double[][] tri = { points[0], points[1], points[2] };
-		double area = M.area(tri);
+	
+	public Convex(Strip strip) {
+		double[][] points = strip.inps;
+		double area = strip.inarea;
 		if (Math.abs(area) < area_zero) {
 			throw new RuntimeException();
 		}
