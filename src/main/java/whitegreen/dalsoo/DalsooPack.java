@@ -124,7 +124,7 @@ public final class DalsooPack {
 		int sid = pendingPolys.size() - 1; // ***************************************** last one
 		PackedPoly first = pendingPolys.get(sid);
 		for (int i = 0; i < rotSteps; i++) {
-			double[][] tp = MathUtil.rotate(trigos[i], first.outps);
+			double[][] tp = MathUtil.rotate(trigos[i], first.outpts);
 			double[] bd = MathUtil.boundBox(tp); // minx, maxx, miny, maxy
 			if (bd[1] - bd[0] > width || bd[3] - bd[2] > height) {
 				continue;
@@ -138,7 +138,7 @@ public final class DalsooPack {
 				rotid = i;
 			}
 		}
-		double[][] tp = MathUtil.rotate(trigos[rotid], first.outps);
+		double[][] tp = MathUtil.rotate(trigos[rotid], first.outpts);
 		double[] bd = MathUtil.boundBox(tp);
 		first.fix_rotate_move(trigos[rotid], new double[] { -bd[0], -bd[2] });
 		pendingPolys.remove(sid);
@@ -152,7 +152,7 @@ public final class DalsooPack {
 		double[] min_cossin = null;
 		double[] min_trans = null;
 		Convex min_con = null;
-		double[][] opl = stp.outps;
+		double[][] opl = stp.outpts;
 		for (int i = 0; i < opl.length; i++) { // each vertex of new strip
 			double[] p = opl[i];
 			double[] d0 = MathUtil.sub(opl[(i - 1 + opl.length) % opl.length], p);
@@ -165,7 +165,7 @@ public final class DalsooPack {
 			double sb2 = d2[1] / mag2;
 
 			for (PackedPoly fixed : packedPolys) {
-				double[][] fopl = fixed.outps;
+				double[][] fopl = fixed.outpts;
 				for (int j = 0; j < fopl.length; j++) { // each vertex of each fixed strip
 					double[] v = fopl[j];
 					double[] t0 = MathUtil.sub(fopl[(j - 1 + fopl.length) % fopl.length], v);
@@ -189,7 +189,7 @@ public final class DalsooPack {
 						double[] trans = MathUtil.sub(v, rot_opl[i]); // *****************
 						double[][] trans_rot_outpoly = MathUtil.move(trans, rot_opl);
 						if (isFeasible(trans_rot_outpoly)) {
-							double[][] trans_rot_inpoly = MathUtil.move(trans, MathUtil.rotate(cossin, stp.inps));
+							double[][] trans_rot_inpoly = MathUtil.move(trans, MathUtil.rotate(cossin, stp.inpts));
 							Convex tmpcon = cntConvex.clone();
 							for (double[] trp : trans_rot_inpoly) {
 								tmpcon.increment_hull(trp);
@@ -227,12 +227,12 @@ public final class DalsooPack {
 		double[] min_trans = null;
 		Convex min_con = null;
 		for (int i = 0; i < rotSteps; i++) {// each angle of new strip
-			double[][] rotated_outpoly = MathUtil.rotate(trigos[i], stp.outps);
-			double[][] rotated_inpoly = MathUtil.rotate(trigos[i], stp.inps);
+			double[][] rotated_outpoly = MathUtil.rotate(trigos[i], stp.outpts);
+			double[][] rotated_inpoly = MathUtil.rotate(trigos[i], stp.inpts);
 
 			for (double[] p : rotated_outpoly) { // each vertex of new strip
 				for (PackedPoly fixed : packedPolys) {
-					for (double[] v : fixed.outps) { // each vertex of each fixed strip
+					for (double[] v : fixed.outpts) { // each vertex of each fixed strip
 						double[] trans = MathUtil.sub(v, p);
 						double[][] trans_rot_outpoly = MathUtil.move(trans, rotated_outpoly);
 						if (isFeasible(trans_rot_outpoly)) {
@@ -344,9 +344,9 @@ public final class DalsooPack {
 
 		// 3. test edge intersections
 		for (int i = 0; i < poly1.length; i++) {
-			for (int j = 0; j < strip.inps.length; j++) {
-				if (MathUtil.intersectionFast(poly1[i], poly1[(i + 1) % poly1.length], strip.inps[j],
-						strip.inps[(j + 1) % strip.inps.length])) {
+			for (int j = 0; j < strip.inpts.length; j++) {
+				if (MathUtil.intersectionFast(poly1[i], poly1[(i + 1) % poly1.length], strip.inpts[j],
+						strip.inpts[(j + 1) % strip.inpts.length])) {
 					return true;
 				}
 			}

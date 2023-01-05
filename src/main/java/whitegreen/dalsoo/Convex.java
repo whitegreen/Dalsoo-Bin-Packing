@@ -22,7 +22,7 @@ class Convex {
 	}
 	
 	public Convex(PackedPoly strip) {
-		double[][] points = strip.inps;
+		double[][] points = strip.inpts;
 		double area = strip.inarea;
 		if (Math.abs(area) < area_zero) {
 			throw new RuntimeException();
