@@ -58,8 +58,8 @@ public class DemoApplet extends PApplet {
 
 	// input
 	private double[][][] randompolys; // the input polygons
-	private final float WID = 2400 * 4; // width of the standard rectangular sheet
-	private final float HEI = 1200 * 4;
+	private final float WID = 2400 * 4 + 500; // width of the standard rectangular sheet
+	private final float HEI = 1200 * 4 + 250;
 	private final double margin = 3.0;
 	// when 0, polys will pack horizontally, 1= vertically
 	private final double preferX = 0; // 0.501 or 1
@@ -67,8 +67,8 @@ public class DemoApplet extends PApplet {
 	// parameters
 	private final double segment_max_length = 4000.0; // 250,400,800, use to break long edges if necessary, relative to the scale
 														// of the polgyons
-	private final int rotSteps = 10; // 18,24,36,48, rotation steps
-	private boolean useAbey = true;
+	private final int rotSteps = 48; // 18,24,36,48, rotation steps
+	private boolean useAbey = !true;
 	private ArrayList<DalsooPack> packs = new ArrayList<>();
 	// true: rotation steps depend on polygons, R. P. Abeysooriya 2018
 	// false: rotation steps are a prior, D. Dalalah, 2014
@@ -90,16 +90,16 @@ public class DemoApplet extends PApplet {
 		long t0 = System.currentTimeMillis();
 		int seed = 4346;
 		ran = new Random(0);
-		randompolys = randomPolygons(320);// prepare the input polygons
+		randompolys = randomPolygons(200);// prepare the input polygons
 
 		Double segment_len = useAbey ? null : segment_max_length;
 		DalsooPack pack = new DalsooPack(randompolys, margin, segment_len, rotSteps, WID, HEI, preferX);
-		pack.packOneBin(useAbey, false);
+		pack.packOneBin(useAbey, !true);
 		packs.add(pack);
 
 		while (!packs.get(packs.size() - 1).isEmpty()) {
 			pack = packs.get(packs.size() - 1).clone();
-			pack.packOneBin(useAbey, false);
+			pack.packOneBin(useAbey, !false);
 			packs.add(pack);
 		}
 
@@ -186,40 +186,40 @@ public class DemoApplet extends PApplet {
 		float sc = 0.15f;
 
 		// display method 1
-//		for (int i = 0; i < randompolys.length; i++) {
-//			int pack_id = result_pack_id[i];
-//			pushMatrix();
-////			translate((pack_id % 3) * 380, (pack_id / 3) * 200);
-//
-//			noFill();
-//			rect(0, 0, sc * WID, sc * HEI);
-//			fill(0, 255, 0);
-//			double[][] poly = randompolys[i];
-//			poly = M.rotate(result_cos_sin[i], poly);
-//			poly = M.move(result_position[i], poly);
-//			draw(poly, sc);
-//
-//			popMatrix();
-//		}
-//		 display method 2
-		for (int i = 0; i < 5; i++) {
-			for (int j = 0; j < 3; j++) {
-				int id = i * 3 + j;
-				if (id >= packs.size()) {
-					return;
-				}
-				DalsooPack pack = packs.get(id);
-				pushMatrix();
-				translate(j * (sc * WID), i * (sc * height)); // (j * 270, i * 150
-				noFill();
-				rect(0, 0, sc * WID, sc * HEI);
-				fill(0, 255, 0);
-				for (PackedPoly strip : pack.packedPolys) {
-					draw(strip.inps, sc);
-				}
-				popMatrix();
-			}
+		for (int i = 0; i < randompolys.length; i++) {
+			int pack_id = result_pack_id[i];
+			pushMatrix();
+			translate((pack_id % 3) * 380, (pack_id / 3) * 200);
+
+			noFill();
+			rect(0, 0, sc * WID, sc * HEI);
+			fill(0, 255, 0);
+			double[][] poly = randompolys[i];
+			poly = MathUtil.rotate(result_cos_sin[i], poly);
+			poly = MathUtil.move(result_position[i], poly);
+			draw(poly, sc);
+
+			popMatrix();
 		}
+//		 display method 2
+//		for (int i = 0; i < 5; i++) {
+//			for (int j = 0; j < 3; j++) {
+//				int id = i * 3 + j;
+//				if (id >= packs.size()) {
+//					return;
+//				}
+//				DalsooPack pack = packs.get(id);
+//				pushMatrix();
+//				translate(j * (sc * WID), i * (sc * height)); // (j * 270, i * 150
+//				noFill();
+//				rect(0, 0, sc * WID, sc * HEI);
+//				fill(0, 255, 0);
+//				for (PackedPoly strip : pack.packedPolys) {
+//					draw(strip.inps, sc);
+//				}
+//				popMatrix();
+//			}
+//		}
 
 	}
 
