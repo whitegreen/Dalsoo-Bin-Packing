@@ -22,29 +22,30 @@ import net.jafama.FastMath;
  */
 public final class DalsooPack {
 
+	private static final double AREA_SC = 1E-6;
+
 	public List<PackedPoly> packedPolys = new ArrayList<>();
 	List<PackedPoly> pendingPolys = new ArrayList<>();
 	Convex cntConvex;
-	
+
 	/** Sin and cos values for each rotation step. */
 	private final double[][] trigos;
 	private final int rotSteps;
 	/** bin dimensions */
-	private final double width, height;
-	private static final double areasc = 1E-6;
+	private final double binWidth, binHeight;
 	private final double preferX;
 
 	DalsooPack(double[][] trigos, int rotSteps, double width, double height, double preferX) {
 		this.trigos = trigos;
 		this.rotSteps = rotSteps;
-		this.width = width;
-		this.height = height;
+		this.binWidth = width;
+		this.binHeight = height;
 		this.preferX = preferX;
 	}
 
 	/**
-	 * Creates an packing. Call {@link #packOneBin(boolean, boolean)} to start
-	 * packing.
+	 * Creates an packing. Call {@link #packOneBin(boolean, boolean) packOneBin()}
+	 * to start packing.
 	 * 
 	 * @param polys              array of polygons [p1, p2]; for each polygon, its
 	 *                           vertices are expressed in [x, y] coordinate pairs:
@@ -71,8 +72,8 @@ public final class DalsooPack {
 		}
 		for (int i = 0; i < polys.length; i++) {
 			double[][] poly = polys[i];
-			PackedPoly strip = new PackedPoly(i, poly, spacing, segment_max_length);
-			pendingPolys.add(strip);
+			PackedPoly p = new PackedPoly(i, poly, spacing, segment_max_length);
+			pendingPolys.add(p);
 		}
 		this.preferX = hSkew;
 
@@ -82,23 +83,37 @@ public final class DalsooPack {
 			double theta = i * 2 * PI / rotSteps;
 			trigos[i] = new double[] { FastMath.cos(theta), FastMath.sin(theta) };
 		}
-		this.width = width;
-		this.height = height;
+		this.binWidth = width;
+		this.binHeight = height;
 	}
 
 	/**
 	 * Packs all polygons, possibly across multiple bins.
 	 * 
-	 * @param abey
+	 * @param abey whether to use
+	 * @return
 	 */
-	public void packAll(boolean abey) {
+	public List<DalsooPack> packAll(boolean abey) {
+		/*
+		 * The pack essentially forks itself with the remaining polygons to model new
+		 * bins.
+		 */
+		List<DalsooPack> packedBins = new ArrayList<>();
+		DalsooPack pack = this;
+		do {
+			pack.packOneBin(abey, false);
+			packedBins.add(pack);
+			pack = pack.clone();
+		} while (!packedBins.get(packedBins.size() - 1).isEmpty());
 
+		return packedBins;
 	}
 
 	/**
 	 * 
 	 * @param abey
-	 * @param largestFirst sort the polygons by area and pack
+	 * @param largestFirst whether to sort the polygons by area (largest first)
+	 *                     before packing
 	 */
 	public void packOneBin(boolean abey, boolean largestFirst) {
 		if (largestFirst) {
@@ -114,22 +129,22 @@ public final class DalsooPack {
 				packPolyDalalah(size - 1 - i);
 			}
 		}
-		
+
 		pendingPolys.removeIf(Objects::isNull);
 	}
 
 	private void packFirstPoly() {
 		int rotid = 0;
-		double minArea = 1000000000;
+		double minArea = Double.MAX_VALUE;
 		int sid = pendingPolys.size() - 1; // ***************************************** last one
 		PackedPoly first = pendingPolys.get(sid);
 		for (int i = 0; i < rotSteps; i++) {
 			double[][] tp = MathUtil.rotate(trigos[i], first.outpts);
 			double[] bd = MathUtil.boundBox(tp); // minx, maxx, miny, maxy
-			if (bd[1] - bd[0] > width || bd[3] - bd[2] > height) {
+			if (bd[1] - bd[0] > binWidth || bd[3] - bd[2] > binHeight) {
 				continue;
 			}
-			double area = areasc * (bd[1] - bd[0]) * (bd[3] - bd[2]);
+			double area = AREA_SC * (bd[1] - bd[0]) * (bd[3] - bd[2]);
 			double[] center = MathUtil.mean(tp);
 			double len = preferX * (center[0] - bd[0]) + (1 - preferX) * (center[1] - bd[2]);
 			area *= len;
@@ -147,13 +162,13 @@ public final class DalsooPack {
 	}
 
 	private boolean packPolyAbey(int sid) {
-		PackedPoly stp = pendingPolys.get(sid);
-		double min = 1000000000;
+		PackedPoly poly = pendingPolys.get(sid);
+		double minArea = Double.MAX_VALUE;
 		double[] min_cossin = null;
 		double[] min_trans = null;
 		Convex min_con = null;
-		double[][] opl = stp.outpts;
-		for (int i = 0; i < opl.length; i++) { // each vertex of new strip
+		double[][] opl = poly.outpts;
+		for (int i = 0; i < opl.length; i++) { // each vertex of new poly
 			double[] p = opl[i];
 			double[] d0 = MathUtil.sub(opl[(i - 1 + opl.length) % opl.length], p);
 			double[] d2 = MathUtil.sub(opl[(i + 1) % opl.length], p);
@@ -166,7 +181,7 @@ public final class DalsooPack {
 
 			for (PackedPoly fixed : packedPolys) {
 				double[][] fopl = fixed.outpts;
-				for (int j = 0; j < fopl.length; j++) { // each vertex of each fixed strip
+				for (int j = 0; j < fopl.length; j++) { // each vertex of each fixed poly
 					double[] v = fopl[j];
 					double[] t0 = MathUtil.sub(fopl[(j - 1 + fopl.length) % fopl.length], v);
 					double[] t2 = MathUtil.sub(fopl[(j + 1) % fopl.length], v);
@@ -189,18 +204,18 @@ public final class DalsooPack {
 						double[] trans = MathUtil.sub(v, rot_opl[i]); // *****************
 						double[][] trans_rot_outpoly = MathUtil.move(trans, rot_opl);
 						if (isFeasible(trans_rot_outpoly)) {
-							double[][] trans_rot_inpoly = MathUtil.move(trans, MathUtil.rotate(cossin, stp.inpts));
+							double[][] trans_rot_inpoly = MathUtil.move(trans, MathUtil.rotate(cossin, poly.inpts));
 							Convex tmpcon = cntConvex.clone();
 							for (double[] trp : trans_rot_inpoly) {
 								tmpcon.increment_hull(trp);
 							}
 
-							double conarea = areasc * MathUtil.areaAbs(tmpcon.convex);
+							double conarea = AREA_SC * MathUtil.areaAbs(tmpcon.convex);
 							double[] center = MathUtil.mean(trans_rot_inpoly);
 							double area;
 							area = conarea * (preferX * Math.abs(center[0]) + (1 - preferX) * Math.abs(center[1]));
-							if (min > area) {
-								min = area;
+							if (minArea > area) {
+								minArea = area;
 								min_cossin = cossin;
 								min_trans = trans;
 								min_con = tmpcon;
@@ -209,30 +224,30 @@ public final class DalsooPack {
 					} // for h
 				}
 			}
-		} // for each vertex of new strip
+		} // for each vertex of new poly
 		if (null == min_cossin) { // no solution, stop
 			return false;
 		}
-		stp.fix_rotate_move(min_cossin, min_trans);
+		poly.fix_rotate_move(min_cossin, min_trans);
 		pendingPolys.set(sid, null); // done, mark as null
-		placePackedPoly(stp);
+		placePackedPoly(poly);
 		cntConvex = min_con;
 		return true;
 	}
 
 	private boolean packPolyDalalah(int sid) {
 		PackedPoly stp = pendingPolys.get(sid);
-		double min = 1000000000;
+		double minArea = Double.MAX_VALUE;
 		int min_rotid = -1;
 		double[] min_trans = null;
 		Convex min_con = null;
-		for (int i = 0; i < rotSteps; i++) {// each angle of new strip
+		for (int i = 0; i < rotSteps; i++) {// each angle of new poly
 			double[][] rotated_outpoly = MathUtil.rotate(trigos[i], stp.outpts);
 			double[][] rotated_inpoly = MathUtil.rotate(trigos[i], stp.inpts);
 
-			for (double[] p : rotated_outpoly) { // each vertex of new strip
+			for (double[] p : rotated_outpoly) { // each vertex of new poly
 				for (PackedPoly fixed : packedPolys) {
-					for (double[] v : fixed.outpts) { // each vertex of each fixed strip
+					for (double[] v : fixed.outpts) { // each vertex of each fixed poly
 						double[] trans = MathUtil.sub(v, p);
 						double[][] trans_rot_outpoly = MathUtil.move(trans, rotated_outpoly);
 						if (isFeasible(trans_rot_outpoly)) {
@@ -242,11 +257,11 @@ public final class DalsooPack {
 								tmpcon.increment_hull(trp);
 							}
 
-							double conarea = areasc * MathUtil.areaAbs(tmpcon.convex);
+							double conarea = AREA_SC * MathUtil.areaAbs(tmpcon.convex);
 							double[] center = MathUtil.mean(trans_rot_outpoly);// trans_rot_outpoly
 							double area = conarea * (preferX * Math.abs(center[0]) + Math.abs(center[1]));
-							if (min > area) {
-								min = area;
+							if (minArea > area) {
+								minArea = area;
 								min_rotid = i;
 								min_trans = trans;
 								min_con = tmpcon;
@@ -254,8 +269,8 @@ public final class DalsooPack {
 						}
 					}
 				}
-			} // for each vertex of new strip
-		} // for each angle of new strip
+			} // for each vertex of new poly
+		} // for each angle of new poly
 		if (0 > min_rotid) { // no solution, stop
 			return false;
 		}
@@ -272,7 +287,7 @@ public final class DalsooPack {
 	 */
 	private boolean isFeasible(double[][] poly) {
 		for (double[] p : poly) {
-			if (p[0] < 0 || p[0] > width || p[1] < 0 || p[1] > height) {
+			if (p[0] < 0 || p[0] > binWidth || p[1] < 0 || p[1] > binHeight) {
 				// out of bounds -- infeasible!
 				return false;
 			}
@@ -320,33 +335,34 @@ public final class DalsooPack {
 	/**
 	 * Determines whether potential poly overlaps with placed poly.
 	 * 
-	 * @param poly1     vertices of poly 1
-	 * @param poly1BB   bounding box of poly 1
-	 * @param poly1Area area of poly 1
-	 * @param poly2     vertices of poly 2
+	 * @param candidate   vertices of poly 1
+	 * @param candidateBB bounding box of poly 1
+	 * @param poly1Area   area of poly 1
+	 * @param poly2       vertices of poly 2
 	 * @return
 	 */
-	private static final boolean overlapFast(final double[][] poly1, final double[] poly1BB, final PackedPoly strip) {
+	private static final boolean overlapFast(final double[][] candidate, final double[] candidateBB,
+			final PackedPoly placedPoly) {
 
 		// 1. test bounding boxes
-		if (!MathUtil.intersect_boundBoxes(poly1BB, strip.bb)) {
+		if (!MathUtil.intersect_boundBoxes(candidateBB, placedPoly.bb)) {
 			return false;
 		}
 		// 2. test the centroid against candidate poly
 		/*
 		 * NOTE this isn't completely robust (a robust method would test every point of
-		 * strip against candidate) but would catch almost all occurrences (so is worth
-		 * the speed-up overall).
+		 * placed poly against candidate) but will catch almost all occurrences (so is
+		 * worth the speed-up overall).
 		 */
-		if (MathUtil.inside(strip.centroid, poly1)) {
+		if (MathUtil.inside(placedPoly.centroid, candidate)) {
 			return true;
 		}
 
 		// 3. test edge intersections
-		for (int i = 0; i < poly1.length; i++) {
-			for (int j = 0; j < strip.inpts.length; j++) {
-				if (MathUtil.intersectionFast(poly1[i], poly1[(i + 1) % poly1.length], strip.inpts[j],
-						strip.inpts[(j + 1) % strip.inpts.length])) {
+		for (int i = 0; i < candidate.length; i++) {
+			for (int j = 0; j < placedPoly.inpts.length; j++) {
+				if (MathUtil.intersectionFast(candidate[i], candidate[(i + 1) % candidate.length], placedPoly.inpts[j],
+						placedPoly.inpts[(j + 1) % placedPoly.inpts.length])) {
 					return true;
 				}
 			}
@@ -355,15 +371,15 @@ public final class DalsooPack {
 
 	}
 
-	private void placePackedPoly(PackedPoly strip) {
-		strip.place();
-		packedPolys.add(strip);
+	private void placePackedPoly(PackedPoly poly) {
+		poly.place();
+		packedPolys.add(poly);
 	}
 
 	public double getEmptyArea() {
 		double sum = 0;
-		for (PackedPoly strip : pendingPolys) {
-			sum += strip.inarea;
+		for (PackedPoly poly : pendingPolys) {
+			sum += poly.inarea;
 		}
 		return sum;
 	}
@@ -397,7 +413,7 @@ public final class DalsooPack {
 
 	@Override
 	public DalsooPack clone() {
-		DalsooPack np = new DalsooPack(trigos, rotSteps, width, height, preferX);
+		DalsooPack np = new DalsooPack(trigos, rotSteps, binWidth, binHeight, preferX);
 		np.pendingPolys = pendingPolys;
 		np.cntConvex = cntConvex;
 		return np;

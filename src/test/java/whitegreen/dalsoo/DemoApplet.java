@@ -1,6 +1,7 @@
 package whitegreen.dalsoo;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import net.jafama.FastMath;
@@ -68,10 +69,10 @@ public class DemoApplet extends PApplet {
 	private final double segment_max_length = 4000.0; // 250,400,800, use to break long edges if necessary, relative to the scale
 														// of the polgyons
 	private final int rotSteps = 48; // 18,24,36,48, rotation steps
-	private boolean useAbey = !true;
-	private ArrayList<DalsooPack> packs = new ArrayList<>();
 	// true: rotation steps depend on polygons, R. P. Abeysooriya 2018
 	// false: rotation steps are a prior, D. Dalalah, 2014
+	private boolean useAbey = true;
+	private List<DalsooPack> packs = new ArrayList<>();
 
 	// output
 	private int[] result_pack_id; // result_pack_id[9]=2 means the 9th polygon is on the 2nd sheet.
@@ -117,6 +118,51 @@ public class DemoApplet extends PApplet {
 
 		System.out.println((System.currentTimeMillis() - t0) / 1000f);
 	}
+
+	@Override
+		public void draw() {
+			background(255);
+			smooth();
+			translate(40, 10);
+			float sc = 0.15f;
+	
+			// display method 1
+			for (int i = 0; i < randompolys.length; i++) {
+				int pack_id = result_pack_id[i];
+				pushMatrix();
+				translate((pack_id % 3) * 380, (pack_id / 3) * 200);
+	
+				noFill();
+				rect(0, 0, sc * WID, sc * HEI);
+				fill(0, 255, 0);
+				double[][] poly = randompolys[i];
+				poly = MathUtil.rotate(result_cos_sin[i], poly);
+				poly = MathUtil.move(result_position[i], poly);
+				draw(poly, sc);
+	
+				popMatrix();
+			}
+	//		 display method 2
+	//		for (int i = 0; i < 5; i++) {
+	//			for (int j = 0; j < 3; j++) {
+	//				int id = i * 3 + j;
+	//				if (id >= packs.size()) {
+	//					return;
+	//				}
+	//				DalsooPack pack = packs.get(id);
+	//				pushMatrix();
+	//				translate(j * (sc * WID), i * (sc * height)); // (j * 270, i * 150
+	//				noFill();
+	//				rect(0, 0, sc * WID, sc * HEI);
+	//				fill(0, 255, 0);
+	//				for (PackedPoly strip : pack.packedPolys) {
+	//					draw(strip.inps, sc);
+	//				}
+	//				popMatrix();
+	//			}
+	//		}
+	
+		}
 
 	private void report() {
 		result_pack_id = new int[randompolys.length];
@@ -176,51 +222,6 @@ public class DemoApplet extends PApplet {
 			arr[i] = new double[] { x, y };
 		}
 		return arr;
-	}
-
-	@Override
-	public void draw() {
-		background(255);
-		smooth();
-		translate(40, 10);
-		float sc = 0.15f;
-
-		// display method 1
-		for (int i = 0; i < randompolys.length; i++) {
-			int pack_id = result_pack_id[i];
-			pushMatrix();
-			translate((pack_id % 3) * 380, (pack_id / 3) * 200);
-
-			noFill();
-			rect(0, 0, sc * WID, sc * HEI);
-			fill(0, 255, 0);
-			double[][] poly = randompolys[i];
-			poly = MathUtil.rotate(result_cos_sin[i], poly);
-			poly = MathUtil.move(result_position[i], poly);
-			draw(poly, sc);
-
-			popMatrix();
-		}
-//		 display method 2
-//		for (int i = 0; i < 5; i++) {
-//			for (int j = 0; j < 3; j++) {
-//				int id = i * 3 + j;
-//				if (id >= packs.size()) {
-//					return;
-//				}
-//				DalsooPack pack = packs.get(id);
-//				pushMatrix();
-//				translate(j * (sc * WID), i * (sc * height)); // (j * 270, i * 150
-//				noFill();
-//				rect(0, 0, sc * WID, sc * HEI);
-//				fill(0, 255, 0);
-//				for (PackedPoly strip : pack.packedPolys) {
-//					draw(strip.inps, sc);
-//				}
-//				popMatrix();
-//			}
-//		}
-
 	}
 
 	private void draw(double[][] ps, float sc) {

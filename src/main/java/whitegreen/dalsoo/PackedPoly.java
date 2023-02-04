@@ -9,13 +9,16 @@ import java.util.ArrayList;
  */
 public class PackedPoly implements Comparable<PackedPoly> {
 
-	public double[][] outpts; // offset & add edge points , as referent point of placement, clock-wise
+	public double[][] outpts; // offset & add edge points, as referent point of placement, clock-wise
 	/** Coordinates of this poly's original polygon */
 	public final double[][] inpts; // original polygon, for 1. convex, 2. intersection
 	public final double inarea;
 	public double[] trigo; // cos & sin
 	public double[] position;
 	public final int id;
+	
+	double[] bb; // bounding box (cached when placed)
+	double[] centroid; // (cached when placed)
 
 	PackedPoly(int id, double[][] original_poly, double spacing, Double segmentMaxLength) {
 		this.id = id;
@@ -49,12 +52,12 @@ public class PackedPoly implements Comparable<PackedPoly> {
 						list.add(MathUtil.between(s, pa, pb));
 					}
 				}
-			} // for
+			}
 			outpts = new double[list.size()][];
 			for (int i = 0; i < outpts.length; i++) {
 				outpts[i] = list.get(i);
 			}
-		} // if
+		}
 	}
 
 	void fix_rotate_move(double[] cossin, double[] dv) { // finalize
@@ -75,9 +78,6 @@ public class PackedPoly implements Comparable<PackedPoly> {
 			outpts[i] = new double[] { dv[0] + x, dv[1] + y };
 		}
 	}
-
-	double[] bb;
-	double[] centroid;
 
 	/**
 	 * Call when placed in the bin. Will pre-compute and save values used for

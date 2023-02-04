@@ -1,6 +1,7 @@
 package whitegreen.dalsoo;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -10,8 +11,12 @@ import org.locationtech.jts.operation.buffer.BufferParameters;
 
 import net.jafama.FastMath;
 
-//Hao Hua, Southeast University, whitegreen@163.com
-
+/**
+ * Math utilities.
+ * 
+ * @author Hao Hua, Southeast University, whitegreen@163.com
+ *
+ */
 public final class MathUtil {
 
 	private static final double denominator_lim = 1e-10;
@@ -466,9 +471,9 @@ public final class MathUtil {
 		}
 		return ps;
 	}
-	
+
 	private static final GeometryFactory GEOM_FACT = new GeometryFactory();
-	
+
 	private static Polygon toPolygon(double[][] poly) {
 		Coordinate[] coords = new Coordinate[poly.length + 1];
 		for (int i = 0; i < coords.length - 1; i++) {
@@ -590,7 +595,7 @@ public final class MathUtil {
 		return 0.5f * sum;
 	}
 
-	public static double areaAbs(ArrayList<double[]> ps) { // signed
+	public static double areaAbs(List<double[]> ps) { // signed
 		double sum = 0;
 		int size = ps.size();
 		for (int i = 0; i < size; i++) {
@@ -667,7 +672,7 @@ public final class MathUtil {
 		return oddNodes;
 	}
 
-	public static boolean inside(double[] p, ArrayList<double[]> vs) {
+	public static boolean inside(double[] p, List<double[]> vs) {
 		int size = vs.size();
 		int i, j = size - 1;
 		boolean oddNodes = false;

@@ -1,30 +1,24 @@
 package whitegreen.dalsoo;
 
 import java.util.ArrayList;
+import java.util.List;
 
-//Hao Hua, Southeast University, whitegreen@163.com
-
+/**
+ * @author Hao Hua, Southeast University, whitegreen@163.com
+ */
 class Convex {
 
-	public ArrayList<double[]> convex; // convex is clockwise
-	private static final double area_zero = 1E-6; // for mm
-
-	@Override
-	public Convex clone() {
-		ArrayList<double[]> list = new ArrayList<>();
-		list.addAll(convex);
-		Convex con = new Convex();
-		con.convex = list;
-		return con;
-	}
-
-	public Convex() {
-	}
+	private static final double ZERO_AREA = 1E-6; // for mm
 	
+	List<double[]> convex; // convex is clockwise
+
+	Convex() {
+	}
+
 	public Convex(PackedPoly strip) {
 		double[][] points = strip.inpts;
 		double area = strip.inarea;
-		if (Math.abs(area) < area_zero) {
+		if (Math.abs(area) < ZERO_AREA) {
 			throw new RuntimeException();
 		}
 		convex = new ArrayList<>();
@@ -40,6 +34,15 @@ class Convex {
 		for (int i = 3; i < points.length; i++) {
 			increment_hull(points[i]);
 		}
+	}
+
+	@Override
+	public Convex clone() {
+		List<double[]> list = new ArrayList<>();
+		list.addAll(convex);
+		Convex con = new Convex();
+		con.convex = list;
+		return con;
 	}
 
 	public void increment_hull(double[] np) { // convex is clockwise
@@ -72,16 +75,16 @@ class Convex {
 			}
 		}
 		if (0 > T1st) {
-			System.out.println(np[0] + "*" + np[1]);
-			for (double[] p : convex) {
-				System.out.println("new double[]{" + p[0] + "," + p[1] + "}");
-			}
-			for (boolean b : visible) {
-				System.out.println(b);
-			}
+//			System.out.println(np[0] + "*" + np[1]);
+//			for (double[] p : convex) {
+//				System.out.println("new double[]{" + p[0] + "," + p[1] + "}");
+//			}
+//			for (boolean b : visible) {
+//				System.out.println(b);
+//			}
 			throw new RuntimeException();
 		}
-		ArrayList<double[]> list = new ArrayList<>(size);
+		List<double[]> list = new ArrayList<>(size);
 		list.add(convex.get(T1st));
 		list.add(np);
 		for (int i = 0; i < size; i++) {
