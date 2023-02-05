@@ -9,19 +9,22 @@ import java.util.ArrayList;
  */
 public class PackedPoly implements Comparable<PackedPoly> {
 
-	public double[][] outpts; // offset & add edge points, as referent point of placement, clock-wise
+	public double[][] originalPoly;
+	private double[][] packedPoly;
+	double[][] outpts; // offset & add edge points, as referent point of placement, clock-wise
 	/** Coordinates of this poly's original polygon */
-	public final double[][] inpts; // original polygon, for 1. convex, 2. intersection
-	public final double inarea;
+	final double[][] inpts; // original polygon, for 1. convex, 2. intersection
+	final double inarea;
 	public double[] trigo; // cos & sin
 	public double[] position;
 	public final int id;
-	
+
 	double[] bb; // bounding box (cached when placed)
 	double[] centroid; // (cached when placed)
 
 	PackedPoly(int id, double[][] original_poly, double spacing, Double segmentMaxLength) {
 		this.id = id;
+		this.originalPoly = original_poly;
 		if (spacing < 0) {
 			throw new IllegalArgumentException("spacing must be >=0");
 		}
@@ -60,6 +63,15 @@ public class PackedPoly implements Comparable<PackedPoly> {
 		}
 	}
 
+	/**
+	 * Get the coordinates of this polygon within the packing arrangement.
+	 * 
+	 * @return
+	 */
+	public double[][] getPackedCoordinates() {
+		return packedPoly;
+	}
+
 	void fix_rotate_move(double[] cossin, double[] dv) { // finalize
 		trigo = cossin.clone();
 		position = dv.clone();
@@ -86,6 +98,8 @@ public class PackedPoly implements Comparable<PackedPoly> {
 	void place() {
 		bb = MathUtil.boundBox(inpts);
 		centroid = MathUtil.center(inpts);
+		packedPoly = MathUtil.rotate(trigo, originalPoly);
+		packedPoly = MathUtil.translate(position, packedPoly);
 	}
 
 	@Override

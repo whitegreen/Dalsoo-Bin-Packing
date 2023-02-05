@@ -59,8 +59,6 @@ public class DemoApplet extends PApplet {
 
 	// input
 	private double[][][] randompolys; // the input polygons
-	private final float WID = 2400 * 4 + 500; // width of the standard rectangular sheet
-	private final float HEI = 1200 * 4 + 250;
 	private final double margin = 3.0;
 	// when 0, polys will pack horizontally, 1= vertically
 	private final double preferX = 0; // 0.501 or 1
@@ -72,14 +70,8 @@ public class DemoApplet extends PApplet {
 	// true: rotation steps depend on polygons, R. P. Abeysooriya 2018
 	// false: rotation steps are a prior, D. Dalalah, 2014
 	private boolean useAbey = true;
-	private List<DalsooPack> packs = new ArrayList<>();
 
-	// output
-	private int[] result_pack_id; // result_pack_id[9]=2 means the 9th polygon is on the 2nd sheet.
-	private double[][] result_cos_sin; // result_cos_sin[9]={0.5, 0.866} means the 9th polygon is rotated 60 degree
-										// w.r.t its reference point
-	private double[][] result_position; // result_cos_sin[9] denotes the x,y-coordinate of the 9th polygon w.r.t its
-										// reference point
+	DalsooPack pack;
 
 	@Override
 	public void settings() {
@@ -88,94 +80,28 @@ public class DemoApplet extends PApplet {
 
 	@Override
 	public void setup() {
-		long t0 = System.currentTimeMillis();
-		int seed = 4346;
-		ran = new Random(0);
+		smooth();
+		fill(0, 255, 0);
+		
+		ran = new Random();
 		randompolys = randomPolygons(200);// prepare the input polygons
 
 		Double segment_len = useAbey ? null : segment_max_length;
-		DalsooPack pack = new DalsooPack(randompolys, margin, segment_len, rotSteps, WID, HEI, preferX);
-		pack.packOneBin(useAbey, !true);
-		packs.add(pack);
-
-		while (!packs.get(packs.size() - 1).isEmpty()) {
-			pack = packs.get(packs.size() - 1).clone();
-			pack.packOneBin(useAbey, !false);
-			packs.add(pack);
-		}
-
-//		for (int i = 0; i < 100; i++) { // packing one sheet after another, 100 is estimated
-//			int size = packs.size();
-//			if (packs.get(size - 1).isEmpty()) {
-//				println(size + " sheets");
-//				break;
-//			}
-//			pack = packs.get(size - 1).clone();
-//			pack.packOneSheet(useAbey);
-//			packs.add(pack);
-//		}
-		report();
-
-		System.out.println((System.currentTimeMillis() - t0) / 1000f);
+		pack = new DalsooPack(randompolys, margin, segment_len, rotSteps, width, height, preferX);
+		pack.packAll(useAbey, !true);
 	}
 
 	@Override
-		public void draw() {
-			background(255);
-			smooth();
-			translate(40, 10);
-			float sc = 0.15f;
-	
-			// display method 1
-			for (int i = 0; i < randompolys.length; i++) {
-				int pack_id = result_pack_id[i];
-				pushMatrix();
-				translate((pack_id % 3) * 380, (pack_id / 3) * 200);
-	
-				noFill();
-				rect(0, 0, sc * WID, sc * HEI);
-				fill(0, 255, 0);
-				double[][] poly = randompolys[i];
-				poly = MathUtil.rotate(result_cos_sin[i], poly);
-				poly = MathUtil.move(result_position[i], poly);
-				draw(poly, sc);
-	
-				popMatrix();
-			}
-	//		 display method 2
-	//		for (int i = 0; i < 5; i++) {
-	//			for (int j = 0; j < 3; j++) {
-	//				int id = i * 3 + j;
-	//				if (id >= packs.size()) {
-	//					return;
-	//				}
-	//				DalsooPack pack = packs.get(id);
-	//				pushMatrix();
-	//				translate(j * (sc * WID), i * (sc * height)); // (j * 270, i * 150
-	//				noFill();
-	//				rect(0, 0, sc * WID, sc * HEI);
-	//				fill(0, 255, 0);
-	//				for (PackedPoly strip : pack.packedPolys) {
-	//					draw(strip.inps, sc);
-	//				}
-	//				popMatrix();
-	//			}
-	//		}
-	
-		}
+	public void draw() {
+		background(255);
+		float binSpacing = 40;
+		float sc = 0.15f;
+		translate(binSpacing, 10);
 
-	private void report() {
-		result_pack_id = new int[randompolys.length];
-		result_cos_sin = new double[randompolys.length][];
-		result_position = new double[randompolys.length][];
-		for (int i = 0; i < packs.size(); i++) {
-			DalsooPack pack = packs.get(i);
-			for (PackedPoly strip : pack.packedPolys) {
-				result_pack_id[strip.id] = i;
-				result_cos_sin[strip.id] = strip.trigo;
-				result_position[strip.id] = strip.position;
-			}
-		}
+		pack.getPackedPolys(6, binSpacing).forEach(p -> {
+			draw(p, sc);
+		});
+
 	}
 
 	private double[][][] randomPolygons(int num) {

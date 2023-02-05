@@ -12,7 +12,7 @@ import org.locationtech.jts.operation.buffer.BufferParameters;
 import net.jafama.FastMath;
 
 /**
- * Math utilities.
+ * Various utility functions for mathematical and geometric operations.
  * 
  * @author Hao Hua, Southeast University, whitegreen@163.com
  *
@@ -394,7 +394,13 @@ public final class MathUtil {
 		return new double[] { x, y };
 	}
 
-	public static double[][] move(double[] v, double[][] ps) {
+	/**
+	 * 
+	 * @param v  translation vector
+	 * @param ps polygon
+	 * @return
+	 */
+	public static double[][] translate(double[] v, double[][] ps) {
 		double[][] arr = new double[ps.length][];
 		for (int i = 0; i < ps.length; i++) {
 			arr[i] = add(ps[i], v);
